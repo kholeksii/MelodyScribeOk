@@ -1,0 +1,30 @@
+{
+  "name": "melody-scribe-frontend",
+  "version": "0.1.0",
+  "description": "Desktop app for music transcription",
+  "main": "electron/main.ts",
+  "scripts": {
+    "dev": "vite",
+    "electron": "electron .",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tone": "^15.1.22",
+    "vexflow": "^4.2.3",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.17",
+    "electron": "^28.2.0",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
+  }
+}
