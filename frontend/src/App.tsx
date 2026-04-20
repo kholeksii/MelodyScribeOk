@@ -1,0 +1,135 @@
+import { useState } from 'react';
+import { FileUpload } from './components/AudioControls/FileUpload';
+import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
+import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
+import { NoteToolbar } from './components/NotationEditor/NoteToolbar';
+import { PlaybackControls } from './components/Playback/PlaybackControls';
+import { ExportButton } from './components/ExportButton';
+import { useProjectStore } from './store/projectStore';
+import { apiClient } from './services/apiClient';
+import { AudioInfo, Instrument, TranscriptionData } from './types';
+
+function App() {
+  const [instrument, setInstrument] = useState<Instrument>('violin');
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const {
+    notes,
+    metadata,
+    audioFileId,
+    error,
+    setNotes,
+    setMetadata,
+    setAudioFileId,
+    setLoading,
+    setError,
+  } = useProjectStore();
+
+  const handleUploadComplete = (audioInfo: AudioInfo) => {
+    setAudioFileId(audioInfo.fileId);
+    setError(null);
+  };
+
+  const handleTranscribe = async () => {
+    if (!audioFileId) return;
+
+    setIsTranscribing(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result: TranscriptionData = await apiClient.transcribe(audioFileId, instrument);
+      setNotes(result.notes);
+      setMetadata({
+        title: `Transcription - ${instrument}`,
+        instrument,
+        tempo: result.tempo,
+        timeSignature: result.timeSignature,
+        key: result.key,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Transcription failed');
+    } finally {
+      setIsTranscribing(false);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-2xl font-bold text-gray-900">MelodyScribe</h1>
+            <InstrumentSelector value={instrument} onChange={setInstrument} />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!notes.length ? (
+          <div className="text-center">
+            <FileUpload onUploadComplete={handleUploadComplete} />
+            {audioFileId && (
+              <div className="mt-6">
+                <button
+                  onClick={handleTranscribe}
+                  disabled={isTranscribing}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
+                </button>
+              </div>
+            )}
+            {error && (
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <NotationDisplay
+              notes={notes}
+              timeSignature={metadata?.timeSignature || '4/4'}
+              keySignature={metadata?.key || 'C'}
+            />
+            <NoteToolbar />
+            <PlaybackControls bpm={metadata?.tempo || 120} />
+            <div className="flex justify-center gap-4">
+              <ExportButton />
+              <button
+                onClick={() => {
+                  setNotes([]);
+                  setMetadata(null);
+                  setAudioFileId(null);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Start New Transcription
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer with metadata */}
+      {metadata && (
+        <footer className="bg-white border-t mt-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-center space-x-6 text-sm text-gray-600">
+              <span>Instrument: {metadata.instrument}</span>
+              <span>Tempo: {metadata.tempo} BPM</span>
+              <span>Key: {metadata.key}</span>
+              <span>Time: {metadata.timeSignature}</span>
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+export default App;
