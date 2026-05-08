@@ -316,6 +316,9 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
                   onClick={() => setSelectedNote(note.id)}
                 >
                   {note.pitch} ({note.duration}) - confidence: {(note.confidence * 100).toFixed(0)}%
+                  {note.articulation && (
+                    <span className="ml-1 text-purple-600 font-medium">· {note.articulation}</span>
+                  )}
                 </li>
               ))}
             </ul>

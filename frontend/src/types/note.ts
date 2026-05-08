@@ -7,6 +7,7 @@ export interface NoteData {
   velocity: number;
   confidence: number;
   llmCorrected: boolean;
+  articulation?: string | null;
 }
 
 export interface Correction {

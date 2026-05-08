@@ -69,6 +69,7 @@ export const apiClient = {
       velocity: note.velocity,
       confidence: note.confidence,
       llmCorrected: note.llm_corrected,
+      articulation: note.articulation ?? null,
     }));
 
     return {
@@ -108,19 +109,44 @@ export const apiClient = {
     return await response.json();
   },
 
-  exportPdf: async (project: Project): Promise<Blob> => {
-    const response = await fetch(`${BASE_URL}/export/pdf`, {
+  exportMusicXml: async (project: Project): Promise<Blob> => {
+    const response = await fetch(`${BASE_URL}/export/musicxml`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
     });
-
-    if (!response.ok) {
-      throw new Error(`Export failed: ${response.statusText}`);
-    }
-
+    if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
     return await response.blob();
+  },
+
+  importMusicXml: async (file: File): Promise<TranscriptionData & { title: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${BASE_URL}/import/musicxml`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error(`Import failed: ${response.statusText}`);
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || 'Import failed');
+    const data = result.data;
+    const notes: NoteData[] = data.notes.map((note: any) => ({
+      id: note.id,
+      pitch: note.pitch,
+      duration: note.duration,
+      startBeat: note.start_beat,
+      measure: note.measure,
+      velocity: note.velocity ?? 80,
+      confidence: note.confidence ?? 1.0,
+      llmCorrected: note.llm_corrected ?? false,
+    }));
+    return {
+      notes,
+      title: data.title ?? 'Imported Score',
+      tempo: data.tempo,
+      key: data.key,
+      timeSignature: data.time_signature,
+      instrument: data.instrument,
+    };
   },
 };

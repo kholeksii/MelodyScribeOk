@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class NoteData(BaseModel):
     id: str
@@ -10,6 +10,7 @@ class NoteData(BaseModel):
     velocity: int
     confidence: float
     llm_corrected: bool = False
+    articulation: Optional[str] = None  # "staccato" | "legato" | None
 
 class TranscriptionResult(BaseModel):
     success: bool

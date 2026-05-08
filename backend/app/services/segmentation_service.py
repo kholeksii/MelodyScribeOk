@@ -22,6 +22,27 @@ try:
 except ImportError:
     np = None  # type: ignore
 
+
+def _rms_to_velocity(rms: float, rms_max: float) -> int:
+    """Map RMS amplitude to MIDI velocity 20–120."""
+    if rms_max <= 0:
+        return 80
+    ratio = min(rms / rms_max, 1.0)
+    return int(20 + ratio * 100)
+
+
+def _detect_articulation(duration_sec: float, gap_sec: float) -> Optional[str]:
+    """staccato if note is short relative to gap; legato if gap is very small."""
+    if gap_sec <= 0:
+        return None
+    ratio = duration_sec / gap_sec
+    if ratio < 0.4:
+        return "staccato"
+    if gap_sec < 0.04:
+        return "legato"
+    return None
+
+
 class SegmentationService:
     def __init__(self):
         self.pitch_detector = PitchDetector()
@@ -39,7 +60,6 @@ class SegmentationService:
 
         try:
             logger.info(f"Loading audio from {file_path}")
-            # Load audio
             audio, sr = librosa.load(file_path, sr=44100, mono=True)
             logger.info(f"Audio loaded: duration={len(audio)/sr:.2f}s, sr={sr}")
         except Exception as exc:
@@ -47,31 +67,26 @@ class SegmentationService:
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
-            # Detect tempo and key
             logger.info("Detecting tempo...")
             tempo = self.tempo_detector.detect(audio, sr)
             logger.info(f"Detected tempo: {tempo} (type={type(tempo).__name__})")
-            
+
             logger.info("Detecting key...")
             key = self.key_detector.detect(audio, sr)
             logger.info(f"Detected key: {key} (type={type(key).__name__})")
 
-            # Detect onsets
             logger.info("Detecting onsets...")
             onsets = self.onset_detector.detect(audio, sr)
             logger.info(f"Detected {len(onsets)} onsets")
 
-            # Detect pitch
             logger.info("Detecting pitch...")
             pitches = self.pitch_detector.detect(audio, sr, instrument)
             logger.info(f"Detected {len(pitches)} pitch values")
 
-            # Segment into notes
             logger.info("Segmenting notes...")
-            notes = self._segment_notes(onsets, pitches, tempo)
+            notes = self._segment_notes(onsets, pitches, tempo, audio, sr)
             logger.info(f"Segmented into {len(notes)} notes")
 
-            # Quantize notes
             logger.info("Quantizing notes...")
             notes = self.quantizer.quantize_notes(notes, tempo, time_signature="4/4")
             logger.info(f"Quantized {len(notes)} notes")
@@ -79,7 +94,6 @@ class SegmentationService:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)
             raise RuntimeError(f"Transcription analysis failed: {exc}") from exc
 
-        # Convert to NoteData objects
         logger.info("Converting notes to NoteData objects...")
         note_data = []
         for i, note in enumerate(notes):
@@ -90,9 +104,10 @@ class SegmentationService:
                     duration=note.get("duration", "quarter"),
                     start_beat=float(note.get("start_beat", 0.0)),
                     measure=int(note.get("measure", 1)),
-                    velocity=80,  # Default velocity
+                    velocity=int(note.get("velocity", 80)),
                     confidence=float(note.get("confidence", 0.0)),
-                    llm_corrected=False
+                    llm_corrected=False,
+                    articulation=note.get("articulation"),
                 )
                 note_data.append(note_obj)
             except Exception as e:
@@ -104,47 +119,69 @@ class SegmentationService:
             notes=note_data,
             tempo=int(tempo),
             key=str(key),
-            time_signature="4/4",  # Default
-            instrument=instrument
+            time_signature="4/4",
+            instrument=instrument,
         )
         logger.info("Transcription completed successfully")
         return result
 
-    def _segment_notes(self, onsets: List[float], pitches: List[Dict], tempo: int) -> List[Dict]:
+    def _segment_notes(
+        self,
+        onsets: List[float],
+        pitches: List[Dict],
+        tempo: int,
+        audio=None,
+        sr: int = 44100,
+    ) -> List[Dict]:
         notes = []
-        current_measure = 1
-        beats_per_measure = 4  # Assuming 4/4
+        beats_per_measure = 4
+
+        # Pre-compute per-segment RMS values for velocity mapping
+        rms_values: List[float] = []
+        for i, onset in enumerate(onsets):
+            end = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
+            if audio is not None and np is not None:
+                start_sample = int(onset * sr)
+                end_sample = int(end * sr)
+                segment = audio[start_sample:end_sample]
+                rms = float(np.sqrt(np.mean(segment ** 2))) if len(segment) > 0 else 0.0
+            else:
+                rms = 0.0
+            rms_values.append(rms)
+
+        rms_max = max(rms_values) if rms_values else 1.0
 
         for i, onset in enumerate(onsets):
-            # Find pitches within this segment
             segment_pitches = [
                 p for p in pitches
-                if onset <= (p['time_ms'] / 1000) < (onsets[i+1] if i+1 < len(onsets) else float('inf'))
+                if onset <= (p['time_ms'] / 1000) < (onsets[i + 1] if i + 1 < len(onsets) else float('inf'))
             ]
 
             if segment_pitches:
-                import numpy as np
+                import numpy as _np
 
-                # Use median pitch
-                median_pitch = np.median([p['frequency'] for p in segment_pitches])
+                median_pitch = _np.median([p['frequency'] for p in segment_pitches])
                 median_note = self.pitch_detector._frequency_to_note(median_pitch)
-                avg_confidence = np.mean([p['confidence'] for p in segment_pitches])
+                avg_confidence = float(_np.mean([p['confidence'] for p in segment_pitches]))
 
-                # Calculate duration
-                duration_sec = (onsets[i+1] if i+1 < len(onsets) else len(segment_pitches) * 0.01) - onset
+                next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
+                duration_sec = next_onset - onset
+                gap_sec = next_onset - onset  # For mono, gap == duration until next onset
 
-                # Calculate start beat
                 start_beat = onset * tempo / 60.0
-
-                # Calculate measure
                 measure = int(start_beat // beats_per_measure) + 1
+
+                velocity = _rms_to_velocity(rms_values[i], rms_max)
+                articulation = _detect_articulation(duration_sec, gap_sec)
 
                 notes.append({
                     "note": median_note,
                     "start_beat": start_beat,
                     "measure": measure,
                     "duration_sec": duration_sec,
-                    "confidence": avg_confidence
+                    "confidence": avg_confidence,
+                    "velocity": velocity,
+                    "articulation": articulation,
                 })
 
         return notes

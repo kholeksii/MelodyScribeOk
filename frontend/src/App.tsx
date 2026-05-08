@@ -5,6 +5,7 @@ import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
 import { NoteToolbar } from './components/NotationEditor/NoteToolbar';
 import { PlaybackControls } from './components/Playback/PlaybackControls';
 import { ExportButton } from './components/ExportButton';
+import { WaveformDisplay } from './components/WaveformDisplay';
 import { useProjectStore } from './store/projectStore';
 import { apiClient } from './services/apiClient';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
@@ -134,6 +135,7 @@ function App() {
               timeSignature={metadata?.timeSignature || '4/4'}
               keySignature={metadata?.key || 'C'}
             />
+            <WaveformDisplay notes={notes} tempo={metadata?.tempo || 120} />
             <NoteToolbar />
             <PlaybackControls bpm={metadata?.tempo || 120} />
             <div className="flex justify-center gap-4">

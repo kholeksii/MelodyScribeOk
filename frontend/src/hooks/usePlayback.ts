@@ -94,8 +94,9 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
           }, timeInSecs + durationBeats * secsPerBeat);
 
           if (note.pitch !== 'rest') {
+            const velocity = Math.max(0, Math.min(1, (note.velocity ?? 80) / 127));
             Tone.Transport.schedule((time) => {
-              synthRef.current!.triggerAttackRelease(note.pitch, toneDuration, time);
+              synthRef.current!.triggerAttackRelease(note.pitch, toneDuration, time, velocity);
             }, timeInSecs);
           }
         });
