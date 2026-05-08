@@ -21,8 +21,10 @@
 - [x] П6 — Undo/Redo в редакторі (`frontend/src/store/projectStore.ts`, `App.tsx`)
 - [x] П7 — Confidence heatmap на нотах (`frontend/src/components/NotationEditor/NotationDisplay.tsx`)
 
-### ⏳ Фаза 2 — не розпочата
-- П8 MusicXML import/export, П9 Waveform display, П10 Динаміка/артикуляції
+### ✅ Фаза 2 — завершена
+- [x] П8 — MusicXML import/export (music21 parse/build, ExportButton, apiClient)
+- [x] П9 — Waveform display (WaveformDisplay.tsx, GET /api/audio/{file_id})
+- [x] П10 — Динаміка/артикуляції (RMS→velocity, staccato/legato detection)
 
 ### ⏳ Фаза 3 — не розпочата
 - П11 PyInstaller бандлінг, П12 Tauri оцінка
