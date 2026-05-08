@@ -1,104 +1,73 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 import * as Tone from 'tone';
 import { NoteData } from '../types';
+import { useProjectStore } from '../store/projectStore';
 
 interface UsePlaybackOptions {
   bpm?: number;
   volume?: number;
 }
 
+const DURATION_TO_TONE: Record<string, string> = {
+  whole: '1n',
+  'half.': '2n.',
+  half: '2n',
+  'quarter.': '4n.',
+  quarter: '4n',
+  'eighth.': '8n.',
+  eighth: '8n',
+  sixteenth: '16n',
+};
+
+const DURATION_TO_BEATS: Record<string, number> = {
+  whole: 4,
+  'half.': 3,
+  half: 2,
+  'quarter.': 1.5,
+  quarter: 1,
+  'eighth.': 0.75,
+  eighth: 0.5,
+  sixteenth: 0.25,
+};
+
 export const usePlayback = (options: UsePlaybackOptions = {}) => {
   const { bpm = 120, volume = -12 } = options;
-  
+
   const synthRef = useRef<Tone.Synth | null>(null);
   const metronomeRef = useRef<Tone.Loop | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMetronomeEnabled, setIsMetronomeEnabled] = useState(false);
   const [currentBpm, setCurrentBpm] = useState(bpm);
 
-  // Initialize Tone.js and synth
+  const setPlayingNoteId = useProjectStore((state) => state.setPlayingNoteId);
+
+  // Initialize synth
   useEffect(() => {
-    // Create synth with nice settings
     const synth = new Tone.Synth({
       oscillator: { type: 'triangle' },
-      envelope: {
-        attack: 0.005,
-        decay: 0.1,
-        sustain: 0.3,
-        release: 0.5,
-      },
+      envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.5 },
     }).toDestination();
-
     synth.volume.value = volume;
     synthRef.current = synth;
-
-    // Cleanup
-    return () => {
-      synth.dispose();
-    };
+    return () => { synth.dispose(); };
   }, [volume]);
 
   // Initialize metronome
   useEffect(() => {
-    if (!synthRef.current) return;
-
-    // Create a simple metronome synth with higher pitch
-    const metronomesynth = new Tone.Synth({
+    const metronomeSynth = new Tone.Synth({
       oscillator: { type: 'sine' },
-      envelope: {
-        attack: 0.005,
-        decay: 0.05,
-        sustain: 0,
-        release: 0.05,
-      },
+      envelope: { attack: 0.005, decay: 0.05, sustain: 0, release: 0.05 },
     }).toDestination();
+    metronomeSynth.volume.value = -15;
 
-    metronomesynth.volume.value = -15; // Quieter than main synth
+    const loop = new Tone.Loop((time) => {
+      metronomeSynth.triggerAttackRelease('A4', '32n', time);
+    }, '4n');
 
-    // Create metronome loop (plays on each beat)
-    const metronomLoop = new Tone.Loop((time) => {
-      // Accent on beat 1 (higher pitch)
-      const beatInMeasure = (Tone.Transport.ticks % (Tone.Transport.PPQ * 4)) / Tone.Transport.PPQ;
-      const frequency = beatInMeasure === 0 ? 'A5' : 'A4';
-      metronomesynth.triggerAttackRelease('32n', time);
-    }, '4n'); // Every quarter note
-
-    metronomesynth.triggerAttackRelease('A4', '32n');
-
-    metronomeRef.current = metronomLoop;
-
-    // Cleanup
-    return () => {
-      metronomLoop.dispose();
-      metronomesynth.dispose();
-    };
+    metronomeRef.current = loop;
+    return () => { loop.dispose(); metronomeSynth.dispose(); };
   }, []);
 
-  // Map duration string to Tone.js duration format
-  const mapDuration = (duration: string): string => {
-    const durationMap: { [key: string]: string } = {
-      whole: '1n',
-      half: '2n',
-      quarter: '4n',
-      eighth: '8n',
-      sixteenth: '16n',
-    };
-    return durationMap[duration] || '4n';
-  };
-
-  // Calculate beats from duration
-  const durationToBeats = (duration: string): number => {
-    const beatMap: { [key: string]: number } = {
-      whole: 4,
-      half: 2,
-      quarter: 1,
-      eighth: 0.5,
-      sixteenth: 0.25,
-    };
-    return beatMap[duration] || 1;
-  };
-
-  // Play notes
   const play = useCallback(
     (notes: NoteData[], playbackBpm: number = currentBpm) => {
       if (!synthRef.current) return;
@@ -107,69 +76,59 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
         setCurrentBpm(playbackBpm);
         Tone.Transport.bpm.value = playbackBpm;
 
-        // Schedule all notes
+        const secsPerBeat = 60 / playbackBpm;
+
         notes.forEach((note) => {
-          if (note.pitch === 'rest') {
-            // Skip rests
-            return;
+          const timeInSecs = note.startBeat * secsPerBeat;
+          const toneDuration = DURATION_TO_TONE[note.duration] ?? '4n';
+          const durationBeats = DURATION_TO_BEATS[note.duration] ?? 1;
+
+          // Highlight note when it starts
+          Tone.Transport.schedule(() => {
+            setPlayingNoteId(note.id);
+          }, timeInSecs);
+
+          // Clear highlight when note ends
+          Tone.Transport.schedule(() => {
+            setPlayingNoteId(null);
+          }, timeInSecs + durationBeats * secsPerBeat);
+
+          if (note.pitch !== 'rest') {
+            Tone.Transport.schedule((time) => {
+              synthRef.current!.triggerAttackRelease(note.pitch, toneDuration, time);
+            }, timeInSecs);
           }
-
-          // Calculate time in seconds: beat * (60 / bpm)
-          const timeInSeconds = (note.startBeat * 60) / playbackBpm;
-          
-          // Map duration to Tone.js format
-          const toneDuration = mapDuration(note.duration);
-
-          console.log(
-            `🎵 Scheduling: ${note.pitch} at ${timeInSeconds.toFixed(2)}s, duration: ${toneDuration}`
-          );
-
-          // Schedule note
-          Tone.Transport.schedule((time) => {
-            synthRef.current!.triggerAttackRelease(note.pitch, toneDuration, time);
-          }, timeInSeconds);
         });
 
-        // Start transport
         Tone.Transport.start();
         setIsPlaying(true);
-
-        console.log(`▶️  Playback started at ${playbackBpm} BPM`);
       } catch (error) {
-        console.error('❌ Playback error:', error);
+        console.error('Playback error:', error);
       }
     },
-    [currentBpm]
+    [currentBpm, setPlayingNoteId]
   );
 
-  // Stop playback
   const stop = useCallback(() => {
     Tone.Transport.stop();
-    Tone.Transport.cancel(); // Clear all scheduled events
+    Tone.Transport.cancel();
     setIsPlaying(false);
-    console.log('⏹️  Playback stopped');
-  }, []);
+    setPlayingNoteId(null);
+  }, [setPlayingNoteId]);
 
-  // Toggle metronome
   const toggleMetronome = useCallback(() => {
     if (!metronomeRef.current) return;
-
     if (isMetronomeEnabled) {
       metronomeRef.current.stop();
       setIsMetronomeEnabled(false);
-      console.log('🔇 Metronome disabled');
     } else {
       metronomeRef.current.start(0);
       setIsMetronomeEnabled(true);
-      console.log('🔊 Metronome enabled');
     }
   }, [isMetronomeEnabled]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      stop();
-    };
+    return () => { stop(); };
   }, [stop]);
 
   return {

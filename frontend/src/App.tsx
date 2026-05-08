@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
@@ -23,7 +23,27 @@ function App() {
     setAudioFileId,
     setLoading,
     setError,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useProjectStore();
+
+  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Shift+Z = redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
@@ -91,6 +111,24 @@ function App() {
           </div>
         ) : (
           <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={undo}
+                disabled={!canUndo()}
+                title="Undo (Ctrl+Z)"
+                className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ↩ Undo
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo()}
+                title="Redo (Ctrl+Shift+Z)"
+                className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ↪ Redo
+              </button>
+            </div>
             <NotationDisplay
               notes={notes}
               timeSignature={metadata?.timeSignature || '4/4'}

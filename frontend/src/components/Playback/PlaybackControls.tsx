@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import * as Tone from 'tone';
 import { useProjectStore } from '../../store/projectStore';
 import { usePlayback } from '../../hooks/usePlayback';

@@ -24,6 +24,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const noteBoundingBoxes = useRef<Map<string, BoundingBox>>(new Map());
   const selectedNoteId = useProjectStore((state) => state.selectedNoteId);
+  const playingNoteId = useProjectStore((state) => state.playingNoteId);
   const setSelectedNote = useProjectStore((state) => state.setSelectedNote);
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
 
@@ -236,51 +237,54 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
     loadVexFlow();
   }, [notes, timeSignature, keySignature]);
 
-  // Highlight selected note
+  // Confidence → base color: green ≥0.9, yellow 0.7–0.9, red <0.7
+  const confidenceColor = (confidence: number): string => {
+    if (confidence >= 0.9) return '#16a34a'; // green-600
+    if (confidence >= 0.7) return '#d97706'; // amber-600
+    return '#dc2626';                         // red-600
+  };
+
+  // Priority: playing > selected > hovered > confidence heatmap
   const highlightSelectedNote = () => {
     if (!svgRef.current) return;
 
     const noteheads = svgRef.current.querySelectorAll('.vf-notehead');
     noteheads.forEach((element, index) => {
-      if (index < notes.length) {
-        const noteId = notes[index].id;
-        const isSelected = noteId === selectedNoteId;
-        const isHovered = noteId === highlightedNoteId;
+      if (index >= notes.length) return;
+      const note = notes[index];
+      const isPlaying = note.id === playingNoteId;
+      const isSelected = note.id === selectedNoteId;
+      const isHovered = note.id === highlightedNoteId;
 
-        if (isSelected || isHovered) {
-          (element as SVGElement).setAttribute('fill', isSelected ? '#2563eb' : '#6b7280');
-          (element as SVGElement).setAttribute('opacity', isSelected ? '1' : '0.7');
-          
-          // Also highlight stem
-          const parent = element.parentElement;
-          if (parent) {
-            const stem = parent.querySelector('.vf-stem');
-            if (stem) {
-              (stem as SVGElement).setAttribute('stroke', isSelected ? '#2563eb' : '#6b7280');
-              (stem as SVGElement).setAttribute('opacity', isSelected ? '1' : '0.7');
-            }
-          }
-        } else {
-          (element as SVGElement).setAttribute('fill', 'black');
-          (element as SVGElement).setAttribute('opacity', '1');
-          
-          const parent = element.parentElement;
-          if (parent) {
-            const stem = parent.querySelector('.vf-stem');
-            if (stem) {
-              (stem as SVGElement).setAttribute('stroke', '#444');
-              (stem as SVGElement).setAttribute('opacity', '1');
-            }
-          }
-        }
+      let color: string;
+      let opacity = '1';
+
+      if (isPlaying) {
+        color = '#16a34a';       // green — currently playing
+      } else if (isSelected) {
+        color = '#2563eb';       // blue — selected by user
+      } else if (isHovered) {
+        color = '#6b7280';       // gray — hovered
+        opacity = '0.8';
+      } else {
+        color = confidenceColor(note.confidence ?? 1);
+      }
+
+      (element as SVGElement).setAttribute('fill', color);
+      (element as SVGElement).setAttribute('opacity', opacity);
+
+      const stem = element.parentElement?.querySelector('.vf-stem');
+      if (stem) {
+        (stem as SVGElement).setAttribute('stroke', color);
+        (stem as SVGElement).setAttribute('opacity', opacity);
       }
     });
   };
 
-  // Update highlighting when selection changes
+  // Update highlighting when playing/selection/hover changes
   useEffect(() => {
     highlightSelectedNote();
-  }, [selectedNoteId, highlightedNoteId]);
+  }, [playingNoteId, selectedNoteId, highlightedNoteId]);
 
   return (
     <div className="w-full">
@@ -318,8 +322,21 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
           </div>
         )}
       </div>
-      <div className="mt-2 text-xs text-gray-500">
-        <p>💡 Click on notes on the staff or in the list to select them</p>
+      <div className="mt-2 flex items-center gap-4 text-xs text-gray-600">
+        <span className="font-medium">Confidence:</span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#16a34a' }} />
+          High (&ge;90%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#d97706' }} />
+          Medium (70–90%)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#dc2626' }} />
+          Low (&lt;70%)
+        </span>
+        <span className="ml-2 text-gray-400">· Click a note to select</span>
       </div>
     </div>
   );

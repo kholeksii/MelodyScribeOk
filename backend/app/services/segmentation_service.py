@@ -73,7 +73,7 @@ class SegmentationService:
 
             # Quantize notes
             logger.info("Quantizing notes...")
-            notes = self.quantizer.quantize_notes(notes, tempo)
+            notes = self.quantizer.quantize_notes(notes, tempo, time_signature="4/4")
             logger.info(f"Quantized {len(notes)} notes")
         except Exception as exc:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)
