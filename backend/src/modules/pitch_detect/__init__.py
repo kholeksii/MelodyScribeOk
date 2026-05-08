@@ -1,2 +1,2 @@
 # Pitch Detection Engine
-# Uses CREPE for pitch detection
+# Uses librosa pyin for pitch detection

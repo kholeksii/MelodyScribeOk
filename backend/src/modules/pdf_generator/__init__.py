@@ -1,2 +1,2 @@
 # PDF Generator
-# Uses LilyPond for PDF generation
+# Uses music21 for MusicXML export, VexFlow for PDF rendering on frontend

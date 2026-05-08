@@ -2,24 +2,24 @@
 
 ## 1. Огляд проекту
 
-**MelodyScribe** — десктопний додаток для автоматичного розпізнавання мелодій (скрипка, фортепіано, гітара) з аудіо та конвертації їх у нотний запис з можливістю редагування та експорту в PDF.
+**MelodyScribe** — десктопний додаток для автоматичного розпізнавання мелодій (фортепіано, скрипка, гітара) з аудіо та конвертації їх у нотний запис з можливістю редагування та експорту в PDF/MusicXML.
 
 ---
 
 ## 2. Функціональні вимоги
 
-| #   | Функція            | Опис                                                      |
-| --- | ------------------ | --------------------------------------------------------- |
-| F1  | Захоплення аудіо   | Запис мелодії з мікрофона в реальному часі                |
-| F2  | Імпорт файлу       | Завантаження аудіофайлу (WAV, MP3, FLAC, OGG)             |
-| F3  | Вибір інструменту  | Користувач обирає: скрипка / фортепіано / гітара          |
-| F4  | Pitch Detection    | Розпізнавання висоти нот (monophonic)                     |
-| F5  | Onset Detection    | Визначення початку/кінця кожної ноти                      |
-| F6  | Note Segmentation  | Визначення тривалості нот та пауз                         |
-| F7  | LLM Verification   | Автоматична перевірка та корекція помилок розпізнавання   |
-| F8  | Notation Editor    | Візуальний редактор нотного запису                        |
-| F9  | PDF Export         | Генерація PDF з нотним записом                            |
-| F10 | Збереження проекту | Збереження/завантаження проекту у власному форматі (JSON) |
+| #   | Функція             | Опис                                                       |
+| --- | ------------------- | ---------------------------------------------------------- |
+| F1  | Захоплення аудіо    | Запис мелодії з мікрофона в реальному часі                 |
+| F2  | Імпорт файлу        | Завантаження аудіофайлу (WAV, MP3, FLAC, OGG)              |
+| F3  | Вибір інструменту   | Користувач обирає: фортепіано / скрипка / гітара           |
+| F4  | Pitch Detection     | Розпізнавання висоти нот (monophonic)                      |
+| F5  | Onset Detection     | Визначення початку/кінця кожної ноти                       |
+| F6  | Note Segmentation   | Визначення тривалості нот та пауз                          |
+| F7  | Theory Verification | Автоматична перевірка помилок правилами музичної теорії    |
+| F8  | Notation Editor     | Візуальний редактор нотного запису                         |
+| F9  | PDF/MusicXML Export | Генерація PDF (VexFlow→SVG→PDF) та MusicXML (music21)     |
+| F10 | Збереження проекту  | Збереження/завантаження проекту у власному форматі (JSON)  |
 
 ---
 
@@ -48,13 +48,13 @@
 │  └──┬──────────┬──────────┬─────────┬────────┘              │
 │     │          │          │         │                       │
 │  ┌──▼───┐  ┌──▼───┐  ┌──▼────┐  ┌─▼────────┐              │
-│  │Audio │  │Pitch │  │Note   │  │LLM       │              │
-│  │Input │  │Detect│  │Segment│  │Verifier  │              │
-│  │Module│  │Engine│  │Module │  │(Ollama)  │              │
+│  │Audio │  │Pitch │  │Note   │  │Theory    │              │
+│  │Input │  │Detect│  │Segment│  │Checker   │              │
+│  │Module│  │(pyin)│  │Module │  │(music21) │              │
 │  └──────┘  └──────┘  └───────┘  └──────────┘              │
 │                                                             │
 │  ┌──────────────────────────────────────────┐              │
-│  │         PDF Generator (LilyPond)          │              │
+│  │      MusicXML Export (music21)            │              │
 │  └──────────────────────────────────────────┘              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -65,33 +65,26 @@
 
 ### 4.1 Frontend
 
-| Технологія      | Призначення                   |
-| --------------- | ----------------------------- |
-| **Electron**    | Десктопна оболонка            |
-| **React 18**    | UI фреймворк                  |
-| **TypeScript**  | Типізація                     |
-| **VexFlow**     | Рендеринг нотного запису      |
-| **Tone.js**     | Програвання нот для перевірки |
-| **TailwindCSS** | Стилізація                    |
+| Технологія      | Призначення                       |
+| --------------- | --------------------------------- |
+| **Electron**    | Десктопна оболонка                |
+| **React 18**    | UI фреймворк                      |
+| **TypeScript**  | Типізація                         |
+| **VexFlow**     | Рендеринг нотного запису          |
+| **Tone.js**     | Програвання нот для перевірки     |
+| **TailwindCSS** | Стилізація                        |
+| **jsPDF**       | Генерація PDF з SVG (VexFlow)     |
 
 ### 4.2 Backend
 
-| Технологія       | Призначення                            |
-| ---------------- | -------------------------------------- |
-| **Python 3.11+** | Основна мова бекенду                   |
-| **FastAPI**      | HTTP API сервер                        |
-| **librosa**      | Аналіз аудіо                           |
-| **CREPE**        | Pitch detection (neural network based) |
-| **aubio**        | Onset detection                        |
-| **music21**      | Музична нотація та аналіз              |
-| **LilyPond**     | Генерація PDF нотного запису           |
-| **Ollama**       | Локальний LLM для верифікації          |
-
-### 4.3 LLM
-
-| Модель                               | Призначення                 |
-| ------------------------------------ | --------------------------- |
-| **Ollama + Mistral 7B / Phi-3 Mini** | Верифікація розпізнаних нот |
+| Технологія       | Призначення                                 |
+| ---------------- | ------------------------------------------- |
+| **Python 3.11+** | Основна мова бекенду                        |
+| **FastAPI**      | HTTP API сервер                             |
+| **librosa**      | Аналіз аудіо + pitch detection (pyin)       |
+| **aubio**        | Onset detection                             |
+| **music21**      | Музична нотація, теорія, MusicXML експорт   |
+| **pydub**        | Конвертація аудіо форматів                  |
 
 ---
 
@@ -115,10 +108,10 @@
 Вихід: масив [(timestamp_ms, frequency_hz, confidence), ...]
 ```
 
-- **CREPE** — для точного pitch detection (найкращий для монофонічних інструментів)
+- **librosa.pyin** — probabilistic YIN для pitch detection (монофонічні інструменти)
 - Параметри адаптуються під інструмент:
-  - Скрипка: діапазон G3–E7 (196–2637 Hz)
   - Фортепіано: діапазон A0–C8 (27.5–4186 Hz)
+  - Скрипка: діапазон G3–E7 (196–2637 Hz)
   - Гітара: діапазон E2–E6 (82–1319 Hz)
 - Фільтрація низькоякісних детекцій (confidence < 0.7)
 
@@ -135,23 +128,19 @@
 - Визначення пауз між нотами
 - Автовизначення темпу (BPM) через `librosa.beat.beat_track`
 
-### 5.4 LLM Verification Module
+### 5.4 Theory Verification Module
 
 ```
 Вхід:  список нот + метадані (інструмент, темп, тональність)
-Вихід: скоригований список нот + список змін з поясненнями
+Вихід: список корекцій з поясненнями + confidence score
 ```
 
-- Запит до Ollama з контекстом:
-  - Розпізнані ноти у форматі ABC notation
-  - Тип інструменту
-  - Виявлений темп і тональність
-- LLM перевіряє:
-  - Чи ноти в межах діапазону інструменту
-  - Чи немає нереалістичних стрибків (>октави для плавних мелодій)
-  - Чи коректні тривалості у межах тактів
-  - Чи є очевидні помилки (enharmonic substitutions)
-- Повертає JSON з корекціями
+- Детерміновані правила на базі music21:
+  - Перевірка діапазону інструменту
+  - Виявлення нереалістичних інтервальних стрибків (>октави)
+  - Перевірка заповненості тактів (сума тривалостей = time signature)
+  - Енгармонічна нормалізація відповідно до тональності
+- Повертає JSON з корекціями та confidence score
 
 ### 5.5 Notation Editor (Frontend)
 
@@ -165,11 +154,11 @@
 - Програвання мелодії через Tone.js для перевірки
 - Паралельне відображення оригінального аудіо (waveform)
 
-### 5.6 PDF Generator
+### 5.6 Export Module
 
-- Конвертація внутрішнього формату → LilyPond notation
-- Виклик LilyPond CLI для генерації PDF
-- Налаштування: розмір сторінки, заголовок, автор
+- **PDF**: VexFlow рендерить ноти у SVG → `jsPDF` + `svg2pdf.js` конвертують у PDF (повністю у фронтенді)
+- **MusicXML**: `music21` конвертує внутрішній формат у MusicXML (на бекенді)
+- Підтримка MuseScore, Finale, Sibelius через MusicXML
 
 ---
 
@@ -180,9 +169,8 @@ POST /api/upload          — завантаження аудіофайлу
 POST /api/record/start    — початок запису з мікрофона
 POST /api/record/stop     — зупинка запису
 POST /api/transcribe      — розпізнавання нот з аудіо
-POST /api/verify           — LLM верифікація нот
-POST /api/export/pdf      — генерація PDF
-POST /api/export/lilypond — експорт у формат LilyPond
+POST /api/verify          — верифікація нот (правила музичної теорії)
+POST /api/export/musicxml — експорт у формат MusicXML
 POST /api/project/save    — збереження проекту
 POST /api/project/load    — завантаження проекту
 GET  /api/health          — health check
@@ -199,7 +187,7 @@ GET  /api/health          — health check
   "version": "1.0",
   "metadata": {
     "title": "My Melody",
-    "instrument": "violin",
+    "instrument": "piano",
     "tempo": 120,
     "timeSignature": "4/4",
     "keySignature": "C",
@@ -218,7 +206,7 @@ GET  /api/health          — health check
     }
   ],
   "audioFile": "base64_or_path",
-  "llmSuggestions": []
+  "theorySuggestions": []
 }
 ```
 
@@ -253,7 +241,7 @@ melody-scribe/
 │   │   │   │   └── ExportMenu.tsx
 │   │   │   ├── Playback/
 │   │   │   │   └── PlaybackControls.tsx
-│   │   │   └── LLMPanel/
+│   │   │   └── TheoryPanel/
 │   │   │       ├── SuggestionsPanel.tsx
 │   │   │       └── SuggestionItem.tsx
 │   │   ├── hooks/
@@ -304,7 +292,7 @@ melody-scribe/
 │   │   │   ├── audio_service.py
 │   │   │   ├── pitch_service.py
 │   │   │   ├── segmentation_service.py
-│   │   │   ├── llm_service.py
+│   │   │   ├── theory_checker.py
 │   │   │   ├── notation_service.py
 │   │   │   └── pdf_service.py
 │   │   ├── models/
@@ -322,18 +310,17 @@ melody-scribe/
 │   │   └── utils/
 │   │       ├── __init__.py
 │   │       ├── audio_utils.py
-│   │       ├── music_utils.py
-│   │       └── lilypond_utils.py
+│   │       └── music_utils.py
 │   ├── tests/
 │   │   ├── test_pitch_service.py
 │   │   ├── test_segmentation.py
-│   │   ├── test_llm_service.py
+│   │   ├── test_theory_checker.py
 │   │   └── test_pdf_service.py
 │   ├── requirements.txt
 │   ├── pyproject.toml
 │   └── Dockerfile
 │
-├── docs/
+├── instructions/
 │   ├── 01-ARCHITECTURE.md     # Цей файл
 │   ├── 02-AI-INSTRUCTIONS.md
 │   └── 03-CLINE-PROMPTS.md
@@ -352,7 +339,7 @@ melody-scribe/
 
 1. Налаштування Python проекту + FastAPI
 2. Audio Input Module (завантаження файлів, конвертація)
-3. Pitch Detection Engine (CREPE integration)
+3. Pitch Detection Engine (librosa.pyin integration)
 4. Onset Detection + Note Segmentation
 5. Базовий API: upload → transcribe → JSON
 
@@ -367,20 +354,24 @@ melody-scribe/
 
 10. Інтерактивний Notation Editor (edit notes)
 11. Toolbar (instrument, tempo, key)
-12. Playback через Tone.js
+12. Playback через Tone.js з синхронізацією курсора
+13. Undo/Redo в редакторі
+14. Confidence heatmap на нотах
 
-### Фаза 4 — LLM + PDF
+### Фаза 4 — Верифікація + Експорт
 
-13. Ollama інтеграція + LLM Verification
-14. Suggestions Panel UI
-15. LilyPond PDF Export
+15. Theory Checker (правила музичної теорії через music21)
+16. Suggestions Panel UI
+17. MusicXML Export (music21)
+18. PDF Export (VexFlow → SVG → jsPDF)
 
 ### Фаза 5 — Polish
 
-16. Запис з мікрофона (real-time)
-17. Project save/load
-18. Error handling + edge cases
-19. Тестування на реальних мелодіях
+19. Запис з мікрофона (real-time)
+20. Project save/load
+21. Error handling + edge cases
+22. Тестування на реальних мелодіях
+23. PyInstaller бандлінг бекенду
 
 ---
 
@@ -398,12 +389,11 @@ melody-scribe/
 
 ---
 
-## 11. Ризики та міtigації
+## 11. Ризики та мітигації
 
-| Ризик                     | Імовірність | Міtigація                                                      |
+| Ризик                     | Імовірність | Мітигація                                                      |
 | ------------------------- | ----------- | -------------------------------------------------------------- |
 | Поліфонічні фрагменти     | Висока      | Попередження користувачу; підтримка тільки монофонії           |
 | Шум у записі              | Середня     | Noise gate + bandpass фільтр під інструмент                    |
-| Неточна квантизація ритму | Висока      | LLM корекція + ручне редагування                               |
-| LilyPond не встановлений  | Низька      | Bundled binary або Docker                                      |
-| Ollama потребує GPU       | Середня     | CPU fallback, використання маленьких моделей (Phi-3 Mini 3.8B) |
+| Неточна квантизація ритму | Висока      | Theory checker корекція + ручне редагування                    |
+| VexFlow SVG→PDF якість    | Низька      | Fallback на MusicXML → MuseScore CLI                           |
