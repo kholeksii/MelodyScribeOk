@@ -48,10 +48,12 @@ notes_for_okh.txt
 
 # Audio files (uploaded/test files)
 backend/uploads/
+tests/
 *.wav
 *.mp3
 *.flac
 *.ogg
+*.m4a
 
 # Node.js (for future frontend)
 node_modules/
