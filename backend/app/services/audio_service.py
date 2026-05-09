@@ -12,7 +12,7 @@ class AudioService:
 
     async def upload_file(self, file: UploadFile) -> dict:
         # Check file extension
-        allowed_extensions = {'.wav', '.mp3', '.flac', '.ogg', '.m4a'}
+        allowed_extensions = {'.wav', '.mp3', '.flac', '.ogg', '.m4a', '.webm'}
         file_extension = Path(file.filename).suffix.lower()
         if file_extension not in allowed_extensions:
             raise ValueError("Unsupported audio format. Use WAV, MP3, FLAC, or OGG.")

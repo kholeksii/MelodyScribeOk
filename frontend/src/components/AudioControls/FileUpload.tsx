@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
+import { RecordButton } from './RecordButton';
+import { useProjectStore } from '../../store/projectStore';
 
 interface FileUploadProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -10,6 +12,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const setAudioBlob = useProjectStore((state) => state.setAudioBlob);
 
   const handleFile = useCallback(async (file: File) => {
     // Validate file type
@@ -29,13 +32,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
     try {
       const audioInfo = await apiClient.uploadAudio(file);
+      setAudioBlob(file);
       onUploadComplete(audioInfo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
     }
-  }, [onUploadComplete]);
+  }, [onUploadComplete, setAudioBlob]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -123,6 +127,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
           </>
         )}
       </div>
+
+      <div className="flex items-center gap-3 my-4">
+        <div className="flex-1 h-px bg-gray-300" />
+        <span className="text-xs text-gray-400 uppercase">or</span>
+        <div className="flex-1 h-px bg-gray-300" />
+      </div>
+
+      <RecordButton onUploadComplete={onUploadComplete} />
 
       {error && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">

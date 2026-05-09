@@ -21,9 +21,9 @@ async def upload_audio(file: UploadFile):
 @router.get("/audio/{file_id}")
 async def get_audio(file_id: str):
     upload_dir = Path(settings.upload_dir)
-    for ext in (".wav", ".mp3", ".flac", ".ogg", ".m4a"):
+    for ext in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm"):
         path = upload_dir / f"{file_id}{ext}"
         if path.exists():
-            media_types = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".flac": "audio/flac", ".ogg": "audio/ogg", ".m4a": "audio/mp4"}
+            media_types = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".flac": "audio/flac", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".webm": "audio/webm"}
             return FileResponse(path, media_type=media_types[ext])
     raise HTTPException(status_code=404, detail="Audio file not found")

@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { apiClient } from '../services/apiClient';
+import jsPDF from 'jspdf';
+import { svg2pdf } from 'svg2pdf.js';
 
 export const ExportButton: React.FC = () => {
   const notes = useProjectStore((state) => state.notes);
@@ -12,7 +14,6 @@ export const ExportButton: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Backend expects snake_case fields
   const buildProject = () => ({
     version: '1.0' as const,
     metadata: {
@@ -33,6 +34,31 @@ export const ExportButton: React.FC = () => {
       llmCorrected: note.llmCorrected,
     })),
   });
+
+  const handleExportPDF = async () => {
+    if (!notes.length || !metadata) return;
+    setIsExporting(true);
+    setError(null);
+    try {
+      const svgEl = document.querySelector('.notation-display svg') as SVGSVGElement | null;
+      if (!svgEl) {
+        setError('Notation SVG not found. Transcribe first.');
+        return;
+      }
+      const svgWidth = svgEl.viewBox?.baseVal?.width || svgEl.clientWidth || 800;
+      const svgHeight = svgEl.viewBox?.baseVal?.height || svgEl.clientHeight || 300;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const scale = pageWidth / svgWidth;
+      doc.setFontSize(12);
+      await svg2pdf(svgEl, doc, { x: 0, y: 0, width: svgWidth * scale, height: svgHeight * scale });
+      doc.save(`${metadata.title.replace(/\s+/g, '_')}.pdf`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PDF export failed');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleExportMusicXML = async () => {
     if (!notes.length || !metadata) return;
@@ -81,6 +107,19 @@ export const ExportButton: React.FC = () => {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <button
+        onClick={handleExportPDF}
+        disabled={isExporting || !notes.length}
+        className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm ${
+          isExporting || !notes.length
+            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            : 'bg-red-600 hover:bg-red-700 text-white'
+        }`}
+        title="Export notation as PDF"
+      >
+        {isExporting ? '⟳ Exporting…' : 'Export PDF'}
+      </button>
+
+      <button
         onClick={handleExportMusicXML}
         disabled={isExporting || !notes.length}
         className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm ${
@@ -90,7 +129,7 @@ export const ExportButton: React.FC = () => {
         }`}
         title="Export to MusicXML (open in MuseScore, Finale, Sibelius)"
       >
-        {isExporting ? '⟳ Exporting…' : '📄 Export MusicXML'}
+        {isExporting ? '⟳ Exporting…' : 'Export MusicXML'}
       </button>
 
       <button
@@ -99,7 +138,7 @@ export const ExportButton: React.FC = () => {
         className="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 disabled:opacity-50"
         title="Import MusicXML file"
       >
-        {isImporting ? '⟳ Importing…' : '📂 Import MusicXML'}
+        {isImporting ? '⟳ Importing…' : 'Import MusicXML'}
       </button>
       <input
         ref={fileInputRef}

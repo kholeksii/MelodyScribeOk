@@ -9,6 +9,7 @@ interface ProjectState {
   future: NoteData[][];
   metadata: ProjectMetadata | null;
   audioFileId: string | null;
+  audioBlob: Blob | null;
   selectedNoteId: string | null;
   playingNoteId: string | null;
   isLoading: boolean;
@@ -30,6 +31,9 @@ interface ProjectState {
   setAudioFileId: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  shiftAllOctaves: (direction: 1 | -1) => void;
+  setAudioBlob: (blob: Blob | null) => void;
+  loadFromProject: (project: import('../types').Project, audioBlob: Blob | null) => void;
   setCorrections: (corrections: Correction[]) => void;
   setVerificationConfidence: (confidence: number) => void;
   clearCorrections: () => void;
@@ -47,6 +51,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   future: [],
   metadata: null,
   audioFileId: null,
+  audioBlob: null,
   selectedNoteId: null,
   playingNoteId: null,
   isLoading: false,
@@ -107,6 +112,35 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   canUndo: () => get().past.length > 0,
   canRedo: () => get().future.length > 0,
 
+  shiftAllOctaves: (direction) => set((state) => {
+    const shifted = state.notes.map((note) => {
+      if (note.pitch === 'rest') return note;
+      const match = note.pitch.match(/^([A-Ga-g][#b]?)(\d+)$/);
+      if (!match) return note;
+      const newOctave = Math.max(1, Math.min(8, Number(match[2]) + direction));
+      return { ...note, pitch: `${match[1]}${newOctave}` };
+    });
+    return {
+      past: pushHistory(state.past, state.notes),
+      future: [],
+      notes: shifted,
+    };
+  }),
+
+  setAudioBlob: (audioBlob) => set({ audioBlob }),
+
+  loadFromProject: (project, audioBlob) => set({
+    notes: project.notes,
+    metadata: project.metadata,
+    audioBlob,
+    audioFileId: null,
+    past: [],
+    future: [],
+    selectedNoteId: null,
+    corrections: [],
+    verificationConfidence: 0,
+  }),
+
   setMetadata: (metadata) => set({ metadata }),
   setSelectedNote: (selectedNoteId) => set({ selectedNoteId }),
   setPlayingNoteId: (playingNoteId) => set({ playingNoteId }),
@@ -123,6 +157,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     future: [],
     metadata: null,
     audioFileId: null,
+    audioBlob: null,
     selectedNoteId: null,
     playingNoteId: null,
     isLoading: false,
