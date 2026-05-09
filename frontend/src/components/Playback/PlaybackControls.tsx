@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Tone from 'tone';
 import { useProjectStore } from '../../store/projectStore';
 import { usePlayback } from '../../hooks/usePlayback';
@@ -11,6 +11,12 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
   const notes = useProjectStore((state) => state.notes);
   const { play, stop, toggleMetronome, isPlaying, isMetronomeEnabled, currentBpm, setCurrentBpm } =
     usePlayback({ bpm, volume: -12 });
+
+  const [bpmInputValue, setBpmInputValue] = useState(String(currentBpm));
+
+  useEffect(() => {
+    setBpmInputValue(String(currentBpm));
+  }, [currentBpm]);
 
   // Filter out rests and check if we have playable notes
   const playableNotes = notes.filter((n) => n.pitch !== 'rest');
@@ -33,8 +39,24 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
   };
 
   const handleBpmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newBpm = Math.max(40, Math.min(300, parseInt(e.target.value, 10) || bpm));
-    setCurrentBpm(newBpm);
+    const raw = e.target.value;
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed) && parsed > 300) {
+      setBpmInputValue('300');
+    } else {
+      setBpmInputValue(raw);
+    }
+  };
+
+  const commitBpm = () => {
+    const parsed = parseInt(bpmInputValue, 10);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(40, Math.min(300, parsed));
+      setCurrentBpm(clamped);
+      setBpmInputValue(String(clamped));
+    } else {
+      setBpmInputValue(String(currentBpm));
+    }
   };
 
   return (
@@ -92,11 +114,13 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
           </label>
           <input
             id="bpm-input"
-            type="number"
-            min="40"
-            max="300"
-            value={currentBpm}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={bpmInputValue}
             onChange={handleBpmChange}
+            onBlur={commitBpm}
+            onKeyDown={(e) => e.key === 'Enter' && commitBpm()}
             className="w-16 text-center font-semibold text-purple-600 border-0 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded"
             title="Tempo (40-300 BPM)"
           />

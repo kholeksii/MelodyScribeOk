@@ -83,7 +83,6 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">MelodyScribe</h1>
-            <InstrumentSelector value={instrument} onChange={setInstrument} />
           </div>
         </div>
       </header>
@@ -93,8 +92,9 @@ function App() {
         {!notes.length ? (
           <div className="text-center">
             <FileUpload onUploadComplete={handleUploadComplete} />
-            {audioFileId && (
-              <div className="mt-6">
+            <div className="mt-6 flex flex-col items-center gap-4">
+              <InstrumentSelector value={instrument} onChange={setInstrument} />
+              {audioFileId && (
                 <button
                   onClick={handleTranscribe}
                   disabled={isTranscribing}
@@ -102,8 +102,8 @@ function App() {
                 >
                   {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             {error && (
               <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-sm text-red-700">{error}</p>
