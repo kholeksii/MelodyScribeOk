@@ -1,9 +1,11 @@
 from typing import List, Dict
 
+# (fmin_hz, fmax_hz, frame_length)
+# fmin is practical melody minimum — avoids sub-harmonic confusion in pyin
 INSTRUMENT_RANGES = {
-    "violin": (196.0, 2637.0),
-    "piano": (27.5, 4186.0),
-    "guitar": (82.0, 1319.0),
+    "violin": (196.0,  2637.0, 2048),
+    "piano":  (220.0,  4186.0, 4096),  # A3–C8; avoids sub-harmonic octave errors
+    "guitar": (82.0,   1319.0, 2048),
 }
 
 
@@ -11,7 +13,7 @@ class PitchDetector:
     def detect(self, audio, sr: int, instrument: str) -> List[Dict]:
         if instrument not in INSTRUMENT_RANGES:
             raise ValueError(f"Unsupported instrument: {instrument}")
-        min_freq, max_freq = INSTRUMENT_RANGES[instrument]
+        min_freq, max_freq, frame_length = INSTRUMENT_RANGES[instrument]
 
         import librosa
         import numpy as np
@@ -23,7 +25,7 @@ class PitchDetector:
                 fmin=min_freq,
                 fmax=max_freq,
                 sr=sr,
-                frame_length=2048,
+                frame_length=frame_length,
                 hop_length=hop_length,
             )
         except Exception as exc:
@@ -31,9 +33,7 @@ class PitchDetector:
 
         times = librosa.times_like(f0, sr=sr, hop_length=hop_length)
 
-        # Keep only Viterbi-voiced frames with valid frequency
-        # voiced_flag (Viterbi HMM decision) is reliable;
-        # voiced_prob (raw frame probability) can be near-zero even for clean notes
+        # Keep only Viterbi-voiced frames with valid, non-NaN frequency
         results = []
         for t, f, v in zip(times, f0, voiced_flag):
             if not bool(v):
@@ -45,12 +45,13 @@ class PitchDetector:
                 "time_ms": float(t) * 1000,
                 "frequency": f_val,
                 "note": self._frequency_to_note(f_val),
-                # confidence will be computed per-segment from pitch stability
-                "confidence": 1.0,
+                "confidence": 1.0,  # refined per-segment in segmentation_service
             })
 
         return results
 
     def _frequency_to_note(self, frequency: float) -> str:
         import librosa
-        return librosa.hz_to_note(frequency)
+        note = librosa.hz_to_note(frequency)
+        # librosa returns Unicode ♯/♭ — normalize to ASCII for VexFlow
+        return note.replace('♯', '#').replace('♭', 'b')

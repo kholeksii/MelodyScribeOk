@@ -362,9 +362,10 @@ function convertKeySignatureToVexFlow(key: string): string {
 
 // Helper functions for pitch and duration conversion
 function convertPitchToVexFlow(pitch: string): string {
-  // Convert "C4" to "c/4", "C#4" to "c#/4", etc.
-  const note = pitch.slice(0, -1).toLowerCase();
-  const octave = pitch.slice(-1);
+  // Normalize Unicode accidentals (librosa uses ♯/♭, VexFlow needs #/b)
+  const normalized = pitch.replace('♯', '#').replace('♭', 'b');
+  const note = normalized.slice(0, -1).toLowerCase();
+  const octave = normalized.slice(-1);
   return `${note}/${octave}`;
 }
 
