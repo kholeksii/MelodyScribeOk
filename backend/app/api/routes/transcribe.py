@@ -21,7 +21,7 @@ def transcribe_audio(request: TranscribeRequest):
         # Find the file
         upload_dir = Path(settings.upload_dir)
         file_path = None
-        for ext in ['.wav', '.mp3', '.flac', '.ogg']:
+        for ext in ['.wav', '.mp3', '.flac', '.ogg', '.m4a']:
             candidate = upload_dir / f"{request.file_id}{ext}"
             if candidate.exists():
                 file_path = candidate
