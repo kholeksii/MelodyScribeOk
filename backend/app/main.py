@@ -14,6 +14,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        # Electron production: renderer loads from file:// or custom scheme
+        "file://",
+        "null",
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -1,0 +1,38 @@
+appId: com.melodyscribe.app
+productName: MelodyScribe
+copyright: "Copyright © 2025"
+
+directories:
+  buildResources: build
+  output: dist-electron
+
+files:
+  - dist/**/*
+  - electron-compiled/**/*.js
+  - package.json
+
+# Include PyInstaller bundle from backend/dist/melodyscribe_server/
+extraResources:
+  - from: ../backend/dist/melodyscribe_server
+    to: backend/melodyscribe_server
+    filter:
+      - "**/*"
+
+mac:
+  category: public.app-category.music
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  icon: build/icon.icns
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: AudioVideo

@@ -15,7 +15,7 @@
 - Оновлено документацію `instructions/01-ARCHITECTURE.md`
 - PR #2 створено та змержено
 
-### 🔄 Фаза 1 — в процесі (наступний крок: П4)
+### ✅ Фаза 1 — завершена
 - [x] П4 — Контекстна квантизація ритму (`backend/app/core/quantizer.py`)
 - [x] П5 — Синхронізоване програвання аудіо + курсор (`frontend/src/hooks/usePlayback.ts`, `store/projectStore.ts`, `NotationDisplay.tsx`)
 - [x] П6 — Undo/Redo в редакторі (`frontend/src/store/projectStore.ts`, `App.tsx`)
@@ -26,8 +26,9 @@
 - [x] П9 — Waveform display (WaveformDisplay.tsx, GET /api/audio/{file_id})
 - [x] П10 — Динаміка/артикуляції (RMS→velocity, staccato/legato detection)
 
-### ⏳ Фаза 3 — не розпочата
-- П11 PyInstaller бандлінг, П12 Tauri оцінка
+### ✅ Фаза 3 — завершена
+- [x] П11 — PyInstaller: `backend/melodyscribe.spec`, `backend/run_server.py`, Electron main.ts запускає бінарник, `build.sh` для повного pipeline
+- [x] П12 — Tauri оцінка: `instructions/03-TAURI-EVALUATION.md` — висновок: Electron для v1, Tauri для v2 при широкому поширенні
 
 ## Запуск бекенду
 ```bash
