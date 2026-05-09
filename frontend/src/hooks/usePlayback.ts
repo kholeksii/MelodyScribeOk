@@ -77,11 +77,14 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
         Tone.Transport.bpm.value = playbackBpm;
 
         const secsPerBeat = 60 / playbackBpm;
+        let endTime = 0;
 
         notes.forEach((note) => {
           const timeInSecs = note.startBeat * secsPerBeat;
           const toneDuration = DURATION_TO_TONE[note.duration] ?? '4n';
           const durationBeats = DURATION_TO_BEATS[note.duration] ?? 1;
+          const noteEnd = timeInSecs + durationBeats * secsPerBeat;
+          if (noteEnd > endTime) endTime = noteEnd;
 
           // Highlight note when it starts
           Tone.Transport.schedule(() => {
@@ -91,7 +94,7 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
           // Clear highlight when note ends
           Tone.Transport.schedule(() => {
             setPlayingNoteId(null);
-          }, timeInSecs + durationBeats * secsPerBeat);
+          }, noteEnd);
 
           if (note.pitch !== 'rest') {
             const velocity = Math.max(0, Math.min(1, (note.velocity ?? 80) / 127));
@@ -100,6 +103,13 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
             }, timeInSecs);
           }
         });
+
+        // Auto-stop when the last note finishes
+        Tone.Transport.schedule(() => {
+          Tone.Transport.stop();
+          Tone.Transport.cancel();
+          setTimeout(() => setIsPlaying(false), 0);
+        }, endTime + 0.1);
 
         Tone.Transport.start();
         setIsPlaying(true);

@@ -133,8 +133,9 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
           return;
         }
 
-        // Try to get Rest class - may not be available in all versions
+        // Try to get Rest and BarNote classes - may not be available in all versions
         const Rest = (Vex.Flow as any).Rest || null;
+        const BarNote = (Vex.Flow as any).BarNote || null;
 
         // Create a wrapper div for SVG with click handling
         const svgWrapper = document.createElement('div');
@@ -169,14 +170,12 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
         
         stave.setContext(context).draw();
 
-        // Convert notes to VexFlow format
-        const vexNotes = notes.map((note, idx) => {
+        // Helper: convert a single NoteData to a VexFlow tickable
+        const makeVexNote = (note: (typeof notes)[0], idx: number) => {
           const duration = convertDurationToVexFlow(note.duration);
-          
-          // Handle rests differently from regular notes
+
           if (note.pitch === 'rest') {
             console.log(`Rest ${idx}: duration=${note.duration} -> ${duration}`);
-            // Try to use Rest class if available, otherwise use fallback
             if (Rest) {
               try {
                 const rest = new Rest({ duration });
@@ -186,36 +185,47 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
                 console.warn(`Failed to create Rest with Rest class, using fallback: ${e}`);
               }
             }
-            
-            // Fallback: create a StaveNote with rest marker
-            const vexNote = new StaveNote({
-              keys: ['b/4'],
-              duration: duration,
-            });
-            (vexNote as any).noteDataId = note.id;
-            (vexNote as any).isRest = true;
-            // Hide the rest note visually as a rest
-            return vexNote;
+            const vexRest = new StaveNote({ keys: ['b/4'], duration });
+            (vexRest as any).noteDataId = note.id;
+            (vexRest as any).isRest = true;
+            return vexRest;
           }
 
           const pitch = convertPitchToVexFlow(note.pitch);
           console.log(`Note ${idx}: pitch=${note.pitch} -> ${pitch}, duration=${note.duration} -> ${duration}`);
-
-          const vexNote = new StaveNote({
-            keys: [pitch],
-            duration: duration,
-          });
-
-          // Store note ID in userData for reference
+          const vexNote = new StaveNote({ keys: [pitch], duration });
           (vexNote as any).noteDataId = note.id;
-
           return vexNote;
+        };
+
+        // Group notes by measure, insert BarNote between measure groups
+        const measureGroups = new Map<number, typeof notes>();
+        notes.forEach(note => {
+          const m = note.measure || 1;
+          if (!measureGroups.has(m)) measureGroups.set(m, []);
+          measureGroups.get(m)!.push(note);
+        });
+
+        const sortedMeasures = Array.from(measureGroups.keys()).sort((a, b) => a - b);
+        const allTickables: any[] = [];
+        let globalIdx = 0;
+        sortedMeasures.forEach((measureNum, measureIdx) => {
+          if (measureIdx > 0 && BarNote) {
+            try {
+              allTickables.push(new BarNote());
+            } catch (e) {
+              console.warn('BarNote failed:', e);
+            }
+          }
+          measureGroups.get(measureNum)!.forEach(note => {
+            allTickables.push(makeVexNote(note, globalIdx++));
+          });
         });
 
         // Create voice WITHOUT strict beat requirement
         const voice = new Voice();
-        voice.setStrict(false); // Allow incomplete voices
-        voice.addTickables(vexNotes);
+        voice.setStrict(false);
+        voice.addTickables(allTickables);
 
         // Format and draw
         const formatter = new Formatter();
