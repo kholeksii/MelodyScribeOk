@@ -1,11 +1,24 @@
 # MelodyScribe
 
-Десктопний застосунок для транскрипції монофонічних мелодій з аудіо у нотний запис.  
-Завантажуєш WAV/MP3 → отримуєш ноти, можеш редагувати, програти, та експортувати у MusicXML (MuseScore, Sibelius, Finale).
+Desktop app for transcribing monophonic melodies from audio into sheet music.  
+Upload WAV/MP3/M4A or record from your mic → get notes → edit → export PDF or MusicXML.
 
 ---
 
-## Швидкий старт (розробка)
+## Prerequisites
+
+| Tool | Version | Install |
+|------|---------|---------|
+| macOS | 13+ | — |
+| Python | 3.11+ | [python.org](https://python.org) |
+| Node.js | 20+ | `brew install node` |
+| ffmpeg | any | `brew install ffmpeg` |
+
+> **ffmpeg is required** for M4A and MP3 transcription. Without it you will get a clear error message asking you to install it.
+
+---
+
+## First run (dev)
 
 ### 1. Backend
 
@@ -18,8 +31,8 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Перевірка: http://localhost:8000/api/health → `{"success": true}`  
-API документація: http://localhost:8000/docs
+Health check: http://localhost:8000/api/health → `{"success": true}`  
+API docs: http://localhost:8000/docs
 
 ### 2. Frontend
 
@@ -27,125 +40,123 @@ API документація: http://localhost:8000/docs
 cd frontend
 npm install
 npm run dev
+# → http://localhost:5173
 ```
 
-Відкрий http://localhost:5173 у браузері (або `npm run electron:dev` для Electron вікна).
+For Electron window: `npm run electron:dev`
 
 ---
 
-## Збірка дистрибутиву (.dmg / .exe)
+## Building the distributable
 
-Потрібно: Python 3.11+, Node.js 18+, Xcode Command Line Tools (macOS).
+Requires: Python 3.11+, Node 20+, Xcode Command Line Tools (macOS).
 
 ```bash
-# Зібрати все одною командою
 ./build.sh
-
-# Або окремо:
-./build.sh --skip-frontend   # тільки PyInstaller backend
-./build.sh --skip-backend    # тільки Electron frontend
 ```
 
-Результат: `frontend/dist-electron/MelodyScribe-*.dmg`
+Output: `frontend/dist-electron/MelodyScribe-*.dmg`
 
-> Перший запуск `build.sh` займає 5–10 хвилин (PyInstaller пакує librosa + music21).
-
----
-
-## Використання
-
-1. **Завантажити аудіо** — перетягни WAV/MP3/FLAC/OGG/M4A або натисни "Choose file"
-2. **Вибрати інструмент** — Piano / Violin / Guitar (впливає на діапазон нот)
-3. **Transcribe Audio** — backend аналізує pitch, onset, tempo, квантизує ритм
-4. **Переглянути ноти** — кольори відображають впевненість (зелений = точно, червоний = перевір)
-5. **Редагувати** — клік на ноту → змінити pitch/тривалість у панелі; Ctrl+Z / Ctrl+Shift+Z для undo/redo
-6. **Програти** — кнопка Play синхронізує курсор по нотах; метроном опційно
-7. **Експорт** — Export MusicXML → відкрити у MuseScore для друку
+> First run takes 5–10 minutes (PyInstaller bundles librosa + music21).
 
 ---
 
-## Структура проекту
+## How to use
+
+1. **Upload or Record** — drag-and-drop WAV/MP3/FLAC/OGG/M4A/WEBM, or click **Record** to capture from your microphone
+2. **Set metadata** *(optional)* — enter BPM, time signature, and key for better accuracy (or use Tap Tempo)
+3. **Choose instrument** — Piano / Violin / Guitar (affects pitch range)
+4. **Transcribe** — backend analyses pitch, onsets, tempo; quantises rhythm
+5. **Edit** — click a note → adjust pitch/duration in the toolbar; "↑ All up / ↓ All down" to shift all octaves; Ctrl+Z / Ctrl+Shift+Z for undo/redo
+6. **Play** — Play button syncs a visual cursor; Stop resets it; optional metronome
+7. **Save** — "Save Project" in the header downloads a `.melody` file; "Open Project" restores it
+8. **Export** — Export PDF (renders VexFlow SVG to PDF) or Export MusicXML (open in MuseScore/Finale/Sibelius)
+
+---
+
+## The .melody file format
+
+A `.melody` file is a ZIP archive containing:
+
+```
+project.json   — notes, metadata (tempo, key, instrument…)
+audio.<ext>    — original audio blob (optional)
+```
+
+Opening a `.melody` file restores the full editing state including audio playback.
+
+---
+
+## Microphone permissions on macOS
+
+First recording attempt will trigger the browser/Electron permission dialog.  
+If denied, grant access in: **System Settings → Privacy & Security → Microphone → MelodyScribe**
+
+---
+
+## Project structure
 
 ```
 MelodyScribeOk/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                  # FastAPI app, CORS
-│   │   ├── config.py                # upload_dir, налаштування
-│   │   ├── api/routes/              # HTTP endpoints
-│   │   │   ├── audio.py             # POST /upload, GET /audio/{id}
-│   │   │   ├── transcribe.py        # POST /transcribe
-│   │   │   ├── verify.py            # POST /verify (TheoryChecker)
-│   │   │   └── export.py            # POST /export/musicxml, POST /import/musicxml
-│   │   ├── core/                    # Аудіо аналіз
-│   │   │   ├── pitch_detector.py    # librosa.pyin
-│   │   │   ├── onset_detector.py    # librosa.onset
-│   │   │   ├── tempo_detector.py
-│   │   │   ├── key_detector.py
-│   │   │   └── quantizer.py         # beat-grid квантизація по тактах
-│   │   ├── services/
-│   │   │   ├── segmentation_service.py  # головний pipeline
-│   │   │   ├── theory_checker.py        # правила муз. теорії (замість LLM)
-│   │   │   └── pdf_service.py           # music21 → MusicXML bytes
-│   │   └── models/
-│   │       ├── note.py              # NoteData, TranscriptionData
-│   │       └── project.py           # Project, ProjectMetadata
-│   ├── run_server.py                # entry point для PyInstaller
-│   ├── melodyscribe.spec            # PyInstaller spec
+│   │   ├── api/routes/          # HTTP endpoints
+│   │   ├── core/                # Audio analysis (pitch, onset, tempo, key, quantizer)
+│   │   ├── services/            # segmentation_service, theory_checker, pdf_service
+│   │   ├── models/              # NoteData, TranscriptionData, Project
+│   │   └── errors.py            # FfmpegMissingError
 │   └── requirements.txt
 │
-├── frontend/
-│   ├── src/
-│   │   ├── App.tsx                  # головний компонент
-│   │   ├── components/
-│   │   │   ├── AudioControls/       # FileUpload, InstrumentSelector
-│   │   │   ├── NotationEditor/      # NotationDisplay (VexFlow), NoteToolbar
-│   │   │   ├── Playback/            # PlaybackControls
-│   │   │   ├── WaveformDisplay.tsx  # canvas waveform + onset markers
-│   │   │   └── ExportButton.tsx     # MusicXML export/import
-│   │   ├── hooks/
-│   │   │   └── usePlayback.ts       # Tone.js + cursor sync
-│   │   ├── store/
-│   │   │   └── projectStore.ts      # Zustand: notes, undo/redo, playback
-│   │   ├── services/
-│   │   │   └── apiClient.ts         # HTTP клієнт до backend
-│   │   └── types/                   # NoteData, Project, AudioInfo...
-│   ├── electron/
-│   │   └── main.ts                  # Electron main: spawn backend, waitForPort
-│   ├── electron-builder.yml         # packaging config
-│   ├── tsconfig.electron.json
-│   └── package.json
+├── frontend/src/
+│   ├── components/
+│   │   ├── AudioControls/       # FileUpload, RecordButton, InstrumentSelector, TranscribeOptions
+│   │   ├── NotationEditor/      # NotationDisplay (VexFlow), NoteToolbar
+│   │   ├── Playback/            # PlaybackControls (Tone.js)
+│   │   ├── Toolbar/             # Save/Load project buttons
+│   │   ├── ErrorBoundary.tsx    # React error boundary
+│   │   ├── Toast.tsx            # Toast notification system
+│   │   ├── Tour.tsx             # First-run onboarding
+│   │   └── ExportButton.tsx     # PDF + MusicXML export
+│   ├── hooks/
+│   │   ├── usePlayback.ts       # Tone.js + cursor sync
+│   │   └── useAudioRecorder.ts  # MediaRecorder hook
+│   ├── services/
+│   │   ├── apiClient.ts         # HTTP client
+│   │   └── projectFile.ts       # .melody save/load (JSZip)
+│   └── store/
+│       ├── projectStore.ts      # Notes, undo/redo, audioBlob
+│       └── recentProjectsStore.ts  # Recent projects (localStorage)
 │
-├── instructions/
-│   ├── 01-ARCHITECTURE.md           # детальна архітектура
-│   └── 03-TAURI-EVALUATION.md       # Electron vs Tauri порівняння
-├── build.sh                         # повний build pipeline
-└── CLAUDE.md                        # контекст для Claude
+├── tests/
+│   └── e2e_smoke.md             # Manual E2E checklist
+├── build.sh                     # Full build pipeline → .dmg
+└── CLAUDE.md
 ```
 
 ---
 
-## Стек
+## Tech stack
 
-| Шар | Технологія |
-|-----|-----------|
+| Layer | Technology |
+|-------|-----------|
 | Desktop shell | Electron 28 |
 | Frontend | React 18 + TypeScript + Vite |
-| UI styling | Tailwind CSS |
-| Нотація | VexFlow 4 |
-| Аудіо playback | Tone.js |
-| Стан | Zustand |
-| Backend | Python 3.11 + FastAPI + uvicorn |
+| UI | Tailwind CSS |
+| Notation | VexFlow 4 |
+| Playback | Tone.js |
+| State | Zustand |
+| PDF export | jsPDF + svg2pdf.js |
+| Project files | JSZip (.melody format) |
+| Backend | Python 3.11 + FastAPI |
 | Pitch detection | librosa.pyin |
-| Onset detection | librosa.onset |
-| Муз. теорія | music21 |
-| MusicXML | music21 |
+| Music theory | music21 |
 | Bundling | PyInstaller + electron-builder |
 
 ---
 
-## Відомі обмеження
+## Known limitations
 
-- Транскрипція **тільки монофонічна** (одна нота в момент часу)
-- Підтримувані інструменти: Piano, Violin, Guitar
-- Акорди, поліфонія — не підтримуються
+- Transcription is **monophonic only** (one note at a time)
+- Supported instruments: Piano, Violin, Guitar
+- Chords and polyphony are not supported
+- M4A/MP3 require ffmpeg; WAV/FLAC/OGG work without it

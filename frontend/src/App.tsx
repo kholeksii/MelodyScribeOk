@@ -10,6 +10,8 @@ import { ExportButton } from './components/ExportButton';
 import { WaveformDisplay } from './components/WaveformDisplay';
 import { useProjectStore } from './store/projectStore';
 import { useRecentProjectsStore } from './store/recentProjectsStore';
+import { useToast } from './components/Toast';
+import { Tour } from './components/Tour';
 import { apiClient } from './services/apiClient';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
 
@@ -29,6 +31,7 @@ function App() {
   const [optTimeSignature, setOptTimeSignature] = useState('4/4');
   const [optKey, setOptKey] = useState('');
   const recents = useRecentProjectsStore((s) => s.recents);
+  const { showToast } = useToast();
 
   const {
     notes,
@@ -89,7 +92,9 @@ function App() {
         key: result.key,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transcription failed');
+      const msg = err instanceof Error ? err.message : 'Transcription failed';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setIsTranscribing(false);
       setLoading(false);
@@ -98,6 +103,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Tour />
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

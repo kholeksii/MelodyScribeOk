@@ -3,6 +3,7 @@ import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
 import { useProjectStore } from '../../store/projectStore';
+import { useToast } from '../Toast';
 
 interface RecordButtonProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -11,6 +12,7 @@ interface RecordButtonProps {
 export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) => {
   const { state, elapsedSec, error, start, stop } = useAudioRecorder();
   const setAudioBlob = useProjectStore((s) => s.setAudioBlob);
+  const { showToast } = useToast();
 
   const handleClick = async () => {
     if (state === 'idle') {
@@ -23,7 +25,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
         const audioInfo = await apiClient.uploadAudio(file);
         onUploadComplete(audioInfo);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Upload failed');
+        showToast(err instanceof Error ? err.message : 'Upload failed', 'error');
       }
     }
   };
