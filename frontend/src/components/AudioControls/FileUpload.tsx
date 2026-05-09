@@ -13,14 +13,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
   const handleFile = useCallback(async (file: File) => {
     // Validate file type
-    const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/flac', 'audio/ogg'];
-    const allowedExtensions = ['.wav', '.mp3', '.flac', '.ogg'];
+    const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/flac', 'audio/ogg', 'audio/mp4', 'audio/x-m4a'];
+    const allowedExtensions = ['.wav', '.mp3', '.flac', '.ogg', '.m4a'];
 
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
 
     if (!isValidType) {
-      setError('Unsupported file format. Please use WAV, MP3, FLAC, or OGG.');
+      setError('Unsupported file format. Please use WAV, MP3, FLAC, OGG, or M4A.');
       return;
     }
 
@@ -104,7 +104,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
                 Upload audio file
               </p>
               <p className="text-sm text-gray-500">
-                Drag and drop or click to select WAV, MP3, FLAC, or OGG file
+                Drag and drop or click to select WAV, MP3, FLAC, OGG, or M4A file
               </p>
             </div>
             <input
