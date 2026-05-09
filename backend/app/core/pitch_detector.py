@@ -6,9 +6,9 @@ INSTRUMENT_RANGES = {
     "guitar": (82.0, 1319.0),
 }
 
+
 class PitchDetector:
     def detect(self, audio, sr: int, instrument: str) -> List[Dict]:
-        # Get instrument range
         if instrument not in INSTRUMENT_RANGES:
             raise ValueError(f"Unsupported instrument: {instrument}")
         min_freq, max_freq = INSTRUMENT_RANGES[instrument]
@@ -18,7 +18,7 @@ class PitchDetector:
 
         hop_length = 256
         try:
-            f0, voiced_flag, voiced_prob = librosa.pyin(
+            f0, voiced_flag, _voiced_prob = librosa.pyin(
                 audio,
                 fmin=min_freq,
                 fmax=max_freq,
@@ -31,46 +31,26 @@ class PitchDetector:
 
         times = librosa.times_like(f0, sr=sr, hop_length=hop_length)
 
-        # Filter results
+        # Keep only Viterbi-voiced frames with valid frequency
+        # voiced_flag (Viterbi HMM decision) is reliable;
+        # voiced_prob (raw frame probability) can be near-zero even for clean notes
         results = []
-        for t, f, v, p in zip(times, f0, voiced_flag, voiced_prob):
-            # Convert numpy types to Python scalars safely
-            try:
-                t_val = float(t) if hasattr(t, 'item') else float(t)
-            except (ValueError, TypeError):
+        for t, f, v in zip(times, f0, voiced_flag):
+            if not bool(v):
                 continue
-            
-            try:
-                f_val = float(f) if hasattr(f, 'item') else float(f)
-            except (ValueError, TypeError):
+            f_val = float(f)
+            if np.isnan(f_val) or not (min_freq <= f_val <= max_freq):
                 continue
-            
-            try:
-                p_val = float(p) if hasattr(p, 'item') else float(p)
-            except (ValueError, TypeError):
-                continue
-            
-            try:
-                v_val = bool(v) if hasattr(v, 'item') else bool(v)
-            except (ValueError, TypeError):
-                continue
-            
-            # Check for NaN values
-            if np.isnan(f_val) or np.isnan(p_val):
-                continue
-            
-            if v_val and p_val > 0.5 and min_freq <= f_val <= max_freq:
-                note = self._frequency_to_note(f_val)
-                results.append({
-                    "time_ms": t_val * 1000,
-                    "frequency": f_val,
-                    "note": note,
-                    "confidence": p_val
-                })
+            results.append({
+                "time_ms": float(t) * 1000,
+                "frequency": f_val,
+                "note": self._frequency_to_note(f_val),
+                # confidence will be computed per-segment from pitch stability
+                "confidence": 1.0,
+            })
 
         return results
 
     def _frequency_to_note(self, frequency: float) -> str:
-        # Simple frequency to note conversion using librosa
         import librosa
         return librosa.hz_to_note(frequency)

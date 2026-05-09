@@ -176,9 +176,16 @@ class SegmentationService:
                 logger.debug(f"Onset {i} at {onset:.3f}s: no pitch found, skipping")
                 continue
 
-            median_pitch = float(_np.median([p['frequency'] for p in segment_pitches]))
+            freqs = _np.array([p['frequency'] for p in segment_pitches])
+            median_pitch = float(_np.median(freqs))
             median_note = self.pitch_detector._frequency_to_note(median_pitch)
-            avg_confidence = float(_np.mean([p['confidence'] for p in segment_pitches]))
+
+            # Confidence = pitch stability: low std relative to median → high confidence
+            if len(freqs) > 1:
+                rel_std = float(_np.std(freqs) / median_pitch) if median_pitch > 0 else 1.0
+                confidence = float(_np.clip(1.0 - rel_std * 5, 0.1, 1.0))
+            else:
+                confidence = 0.75  # single frame — medium confidence
 
             duration_sec = next_onset - onset
             start_beat = onset * tempo / 60.0
@@ -187,13 +194,13 @@ class SegmentationService:
             velocity = _rms_to_velocity(rms_values[i], rms_max)
             articulation = _detect_articulation(duration_sec, duration_sec)
 
-            logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={avg_confidence:.2f})")
+            logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={confidence:.2f})")
             notes.append({
                 "note": median_note,
                 "start_beat": start_beat,
                 "measure": measure,
                 "duration_sec": duration_sec,
-                "confidence": avg_confidence,
+                "confidence": confidence,
                 "velocity": velocity,
                 "articulation": articulation,
             })
