@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
+import { RecordButton } from './RecordButton';
 
 interface FileUploadProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -123,6 +124,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
           </>
         )}
       </div>
+
+      <div className="flex items-center gap-3 my-4">
+        <div className="flex-1 h-px bg-gray-300" />
+        <span className="text-xs text-gray-400 uppercase">or</span>
+        <div className="flex-1 h-px bg-gray-300" />
+      </div>
+
+      <RecordButton onUploadComplete={onUploadComplete} />
 
       {error && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
