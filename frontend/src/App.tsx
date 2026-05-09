@@ -2,14 +2,25 @@ import { useState, useEffect } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
+import { Toolbar } from './components/Toolbar/Toolbar';
 import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
 import { NoteToolbar } from './components/NotationEditor/NoteToolbar';
 import { PlaybackControls } from './components/Playback/PlaybackControls';
 import { ExportButton } from './components/ExportButton';
 import { WaveformDisplay } from './components/WaveformDisplay';
 import { useProjectStore } from './store/projectStore';
+import { useRecentProjectsStore } from './store/recentProjectsStore';
 import { apiClient } from './services/apiClient';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
+
+function relativeTime(ts: number): string {
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const diffMs = ts - Date.now();
+  const diffDays = Math.round(diffMs / 86400000);
+  if (Math.abs(diffDays) < 1) return 'today';
+  if (Math.abs(diffDays) < 7) return rtf.format(diffDays, 'day');
+  return rtf.format(Math.round(diffDays / 7), 'week');
+}
 
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('violin');
@@ -17,6 +28,7 @@ function App() {
   const [optBpm, setOptBpm] = useState('');
   const [optTimeSignature, setOptTimeSignature] = useState('4/4');
   const [optKey, setOptKey] = useState('');
+  const recents = useRecentProjectsStore((s) => s.recents);
 
   const {
     notes,
@@ -91,6 +103,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">MelodyScribe</h1>
+            <Toolbar />
           </div>
         </div>
       </header>
@@ -99,6 +112,20 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!notes.length ? (
           <div className="text-center">
+            {recents.length > 0 && (
+              <div className="mb-6 text-left max-w-md mx-auto">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Recent projects</p>
+                <ul className="space-y-1">
+                  {recents.map((r) => (
+                    <li key={r.name + r.savedAt} className="flex justify-between text-sm text-gray-600 border-b border-gray-100 pb-1">
+                      <span className="truncate">{r.name}</span>
+                      <span className="ml-3 text-gray-400 shrink-0">{relativeTime(r.savedAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-gray-400 mt-1">Use "Open Project" to reopen a saved file.</p>
+              </div>
+            )}
             <FileUpload onUploadComplete={handleUploadComplete} />
             <div className="mt-6 flex flex-col items-center gap-4">
               <InstrumentSelector value={instrument} onChange={setInstrument} />

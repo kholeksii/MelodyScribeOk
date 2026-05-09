@@ -2,6 +2,7 @@ import React from 'react';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
+import { useProjectStore } from '../../store/projectStore';
 
 interface RecordButtonProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -9,6 +10,7 @@ interface RecordButtonProps {
 
 export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) => {
   const { state, elapsedSec, error, start, stop } = useAudioRecorder();
+  const setAudioBlob = useProjectStore((s) => s.setAudioBlob);
 
   const handleClick = async () => {
     if (state === 'idle') {
@@ -16,6 +18,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
     } else if (state === 'recording') {
       const blob = await stop();
       try {
+        setAudioBlob(blob);
         const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
         const audioInfo = await apiClient.uploadAudio(file);
         onUploadComplete(audioInfo);

@@ -297,7 +297,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
   }, [playingNoteId, selectedNoteId, highlightedNoteId]);
 
   return (
-    <div className="w-full">
+    <div className="w-full notation-display">
       <h2 className="text-lg font-semibold mb-2">
         Notation Editor - {notes.length} notes
         {selectedNoteId && (
