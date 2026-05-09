@@ -1,138 +1,151 @@
 # MelodyScribe
 
-AI-powered music transcription application that converts audio files into musical notation and sheet music.
+Десктопний застосунок для транскрипції монофонічних мелодій з аудіо у нотний запис.  
+Завантажуєш WAV/MP3 → отримуєш ноти, можеш редагувати, програти, та експортувати у MusicXML (MuseScore, Sibelius, Finale).
 
-## 🎵 Features
+---
 
-- **Audio Upload**: Support for WAV, MP3, FLAC, and OGG formats
-- **Pitch Detection**: Advanced algorithms for accurate note recognition
-- **Rhythm Analysis**: Onset detection and tempo estimation
-- **Key Detection**: Automatic key signature identification
-- **Quantization**: Convert continuous audio to discrete musical notes
-- **Sheet Music Generation**: Export to standard music notation formats
+## Швидкий старт (розробка)
 
-## 🏗️ Architecture
+### 1. Backend
 
-### Backend (Python/FastAPI)
-- **Framework**: FastAPI with automatic API documentation
-- **Audio Processing**: Librosa, Aubio, CREPE for pitch detection
-- **AI Integration**: Ollama for music analysis and notation
-- **File Handling**: Secure audio file uploads with metadata extraction
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-### Frontend (Planned)
-- **Desktop App**: Electron + React + TypeScript
-- **UI Components**: Modern interface for audio upload and notation display
-- **Real-time Preview**: Live transcription visualization
+python -m uvicorn app.main:app --reload --port 8000
+```
 
-## 🚀 Current Status
+Перевірка: http://localhost:8000/api/health → `{"success": true}`  
+API документація: http://localhost:8000/docs
 
-### ✅ Completed
-- Backend project structure (P01)
-- Pydantic data models (P02)
-- Audio service foundation (P03)
-- API routes for upload and transcribe (P04-P05, P10)
-- Core audio processing modules (P06-P09)
-- Basic FastAPI server with health endpoint
+### 2. Frontend
 
-### ⚠️ Known Issues
-- **Python 3.13 Compatibility**: Some audio libraries (numpy, librosa, pydub) have compilation issues
-- **Missing Dependencies**: Audio processing libraries not fully installed
-- **Frontend**: Not yet implemented
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### 🔄 In Progress
-- Resolving dependency conflicts
-- Full audio processing pipeline integration
+Відкрий http://localhost:5173 у браузері (або `npm run electron:dev` для Electron вікна).
 
-## 🛠️ Setup & Installation
+---
 
-### Prerequisites
-- Python 3.11+ (3.13 has compatibility issues with some libraries)
-- Virtual environment support
+## Збірка дистрибутиву (.dmg / .exe)
 
-### Backend Setup
+Потрібно: Python 3.11+, Node.js 18+, Xcode Command Line Tools (macOS).
 
-1. **Create virtual environment**:
-   ```bash
-   python -m venv .venv-1
-   ```
+```bash
+# Зібрати все одною командою
+./build.sh
 
-2. **Activate environment**:
-   ```bash
-   .venv-1\Scripts\activate  # Windows
-   ```
+# Або окремо:
+./build.sh --skip-frontend   # тільки PyInstaller backend
+./build.sh --skip-backend    # тільки Electron frontend
+```
 
-3. **Install dependencies**:
-   ```bash
-   pip install fastapi uvicorn pydantic python-multipart
-   ```
+Результат: `frontend/dist-electron/MelodyScribe-*.dmg`
 
-4. **Run the server**:
-   ```bash
-   python -m uvicorn backend.app.main:app --reload --port 8000
-   ```
+> Перший запуск `build.sh` займає 5–10 хвилин (PyInstaller пакує librosa + music21).
 
-5. **Verify installation**:
-   ```bash
-   curl http://localhost:8000/api/health
-   # Expected: {"success":true,"data":{"status":"ok"}}
-   ```
+---
 
-### API Endpoints
+## Використання
 
-- `GET /api/health` - Server health check
-- `POST /api/upload` - Upload audio file
-- `POST /api/transcribe` - Transcribe audio to notes
+1. **Завантажити аудіо** — перетягни WAV/MP3/FLAC/OGG або натисни "Choose file"
+2. **Вибрати інструмент** — Piano / Violin / Guitar (впливає на діапазон нот)
+3. **Transcribe Audio** — backend аналізує pitch, onset, tempo, квантизує ритм
+4. **Переглянути ноти** — кольори відображають впевненість (зелений = точно, червоний = перевір)
+5. **Редагувати** — клік на ноту → змінити pitch/тривалість у панелі; Ctrl+Z / Ctrl+Shift+Z для undo/redo
+6. **Програти** — кнопка Play синхронізує курсор по нотах; метроном опційно
+7. **Експорт** — Export MusicXML → відкрити у MuseScore для друку
 
-Visit `http://localhost:8000/docs` for interactive API documentation.
+---
 
-## 📁 Project Structure
+## Структура проекту
 
 ```
 MelodyScribeOk/
 ├── backend/
-│   └── app/
-│       ├── main.py              # FastAPI application entry point
-│       ├── config.py            # Application configuration
-│       ├── models/              # Pydantic data models
-│       │   ├── audio.py
-│       │   ├── note.py
-│       │   └── project.py
-│       ├── services/            # Business logic services
-│       │   ├── audio_service.py
-│       │   └── segmentation_service.py
-│       ├── core/                # Core audio processing modules
-│       │   ├── pitch_detector.py
-│       │   ├── onset_detector.py
-│       │   ├── tempo_detector.py
-│       │   ├── key_detector.py
-│       │   └── quantizer.py
-│       └── api/
-│           └── routes/          # API endpoint definitions
-│               ├── audio.py
-│               └── transcribe.py
-├── frontend/                    # (Planned) Electron + React app
-├── instructions/                # Project documentation
-│   ├── 01-ARCHITECTURE.md
-│   ├── 02-AI-INSTRUCTIONS.md
-│   └── 03-CLINE-PROMPTS.md
-├── LICENSE
-└── README.md
+│   ├── app/
+│   │   ├── main.py                  # FastAPI app, CORS
+│   │   ├── config.py                # upload_dir, налаштування
+│   │   ├── api/routes/              # HTTP endpoints
+│   │   │   ├── audio.py             # POST /upload, GET /audio/{id}
+│   │   │   ├── transcribe.py        # POST /transcribe
+│   │   │   ├── verify.py            # POST /verify (TheoryChecker)
+│   │   │   └── export.py            # POST /export/musicxml, POST /import/musicxml
+│   │   ├── core/                    # Аудіо аналіз
+│   │   │   ├── pitch_detector.py    # librosa.pyin
+│   │   │   ├── onset_detector.py    # librosa.onset
+│   │   │   ├── tempo_detector.py
+│   │   │   ├── key_detector.py
+│   │   │   └── quantizer.py         # beat-grid квантизація по тактах
+│   │   ├── services/
+│   │   │   ├── segmentation_service.py  # головний pipeline
+│   │   │   ├── theory_checker.py        # правила муз. теорії (замість LLM)
+│   │   │   └── pdf_service.py           # music21 → MusicXML bytes
+│   │   └── models/
+│   │       ├── note.py              # NoteData, TranscriptionData
+│   │       └── project.py           # Project, ProjectMetadata
+│   ├── run_server.py                # entry point для PyInstaller
+│   ├── melodyscribe.spec            # PyInstaller spec
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx                  # головний компонент
+│   │   ├── components/
+│   │   │   ├── AudioControls/       # FileUpload, InstrumentSelector
+│   │   │   ├── NotationEditor/      # NotationDisplay (VexFlow), NoteToolbar
+│   │   │   ├── Playback/            # PlaybackControls
+│   │   │   ├── WaveformDisplay.tsx  # canvas waveform + onset markers
+│   │   │   └── ExportButton.tsx     # MusicXML export/import
+│   │   ├── hooks/
+│   │   │   └── usePlayback.ts       # Tone.js + cursor sync
+│   │   ├── store/
+│   │   │   └── projectStore.ts      # Zustand: notes, undo/redo, playback
+│   │   ├── services/
+│   │   │   └── apiClient.ts         # HTTP клієнт до backend
+│   │   └── types/                   # NoteData, Project, AudioInfo...
+│   ├── electron/
+│   │   └── main.ts                  # Electron main: spawn backend, waitForPort
+│   ├── electron-builder.yml         # packaging config
+│   ├── tsconfig.electron.json
+│   └── package.json
+│
+├── instructions/
+│   ├── 01-ARCHITECTURE.md           # детальна архітектура
+│   └── 03-TAURI-EVALUATION.md       # Electron vs Tauri порівняння
+├── build.sh                         # повний build pipeline
+└── CLAUDE.md                        # контекст для Claude
 ```
 
-## 🎯 Next Steps
+---
 
-1. **Resolve Dependencies**: Fix Python 3.13 compatibility issues
-2. **Install Audio Libraries**: Add librosa, aubio, crepe, music21
-3. **Complete Backend**: Implement full transcription pipeline
-4. **Frontend Development**: Create Electron + React interface
-5. **Integration**: Connect frontend with backend APIs
-6. **Testing**: Add comprehensive test suite
-7. **Documentation**: Complete API and user documentation
+## Стек
 
-## 🤝 Contributing
+| Шар | Технологія |
+|-----|-----------|
+| Desktop shell | Electron 28 |
+| Frontend | React 18 + TypeScript + Vite |
+| UI styling | Tailwind CSS |
+| Нотація | VexFlow 4 |
+| Аудіо playback | Tone.js |
+| Стан | Zustand |
+| Backend | Python 3.11 + FastAPI + uvicorn |
+| Pitch detection | librosa.pyin |
+| Onset detection | librosa.onset |
+| Муз. теорія | music21 |
+| MusicXML | music21 |
+| Bundling | PyInstaller + electron-builder |
 
-This project is in active development. Contributions welcome!
+---
 
-## 📄 License
+## Відомі обмеження
 
-See LICENSE file for details.
+- Транскрипція **тільки монофонічна** (одна нота в момент часу)
+- Підтримувані інструменти: Piano, Violin, Guitar
+- Акорди, поліфонія — не підтримуються
