@@ -39,13 +39,22 @@ export const apiClient = {
     };
   },
 
-  transcribe: async (fileId: string, instrument: Instrument): Promise<TranscriptionData> => {
+  transcribe: async (
+    fileId: string,
+    instrument: Instrument,
+    options?: { bpm?: number; timeSignature?: string; key?: string },
+  ): Promise<TranscriptionData> => {
+    const body: Record<string, unknown> = { file_id: fileId, instrument };
+    if (options?.bpm) body.bpm = options.bpm;
+    if (options?.timeSignature) body.time_signature = options.timeSignature;
+    if (options?.key) body.key = options.key;
+
     const response = await fetch(`${BASE_URL}/transcribe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ file_id: fileId, instrument }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

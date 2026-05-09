@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
+import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
 import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
 import { NoteToolbar } from './components/NotationEditor/NoteToolbar';
 import { PlaybackControls } from './components/Playback/PlaybackControls';
@@ -13,6 +14,9 @@ import { AudioInfo, Instrument, TranscriptionData } from './types';
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('violin');
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [optBpm, setOptBpm] = useState('');
+  const [optTimeSignature, setOptTimeSignature] = useState('4/4');
+  const [optKey, setOptKey] = useState('');
 
   const {
     notes,
@@ -59,7 +63,11 @@ function App() {
     setError(null);
 
     try {
-      const result: TranscriptionData = await apiClient.transcribe(audioFileId, instrument);
+      const options: { bpm?: number; timeSignature?: string; key?: string } = {};
+      if (optBpm) options.bpm = Number(optBpm);
+      if (optTimeSignature) options.timeSignature = optTimeSignature;
+      if (optKey) options.key = optKey;
+      const result: TranscriptionData = await apiClient.transcribe(audioFileId, instrument, options);
       setNotes(result.notes);
       setMetadata({
         title: `Transcription - ${instrument}`,
@@ -94,6 +102,14 @@ function App() {
             <FileUpload onUploadComplete={handleUploadComplete} />
             <div className="mt-6 flex flex-col items-center gap-4">
               <InstrumentSelector value={instrument} onChange={setInstrument} />
+              <TranscribeOptions
+                bpm={optBpm}
+                setBpm={setOptBpm}
+                timeSignature={optTimeSignature}
+                setTimeSignature={setOptTimeSignature}
+                musicalKey={optKey}
+                setMusicalKey={setOptKey}
+              />
               {audioFileId && (
                 <button
                   onClick={handleTranscribe}

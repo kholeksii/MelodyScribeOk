@@ -11,6 +11,7 @@ from ..core.key_detector import KeyDetector
 from ..core.quantizer import Quantizer
 from ..models.note import TranscriptionData, NoteData
 from ..config import settings
+from ..errors import FfmpegMissingError
 
 try:
     import librosa
@@ -51,7 +52,14 @@ class SegmentationService:
         self.key_detector = KeyDetector()
         self.quantizer = Quantizer()
 
-    def transcribe(self, file_path: str, instrument: str) -> TranscriptionData:
+    def transcribe(
+        self,
+        file_path: str,
+        instrument: str,
+        bpm: Optional[int] = None,
+        time_signature: Optional[str] = None,
+        key: Optional[str] = None,
+    ) -> TranscriptionData:
         if librosa is None:
             raise RuntimeError("Audio analysis libraries are not installed.")
 
@@ -63,17 +71,28 @@ class SegmentationService:
             audio, sr = librosa.load(file_path, sr=44100, mono=True)
             logger.info(f"Audio loaded: duration={len(audio)/sr:.2f}s, sr={sr}")
         except Exception as exc:
+            err_str = str(exc).lower()
+            if "audioread" in err_str or "ffmpeg" in err_str or "codec" in err_str:
+                raise FfmpegMissingError() from exc
             logger.error(f"Audio load failed: {exc}", exc_info=True)
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
-            logger.info("Detecting tempo...")
-            tempo = self.tempo_detector.detect(audio, sr)
+            if bpm is not None:
+                logger.info(f"Using user-supplied BPM: {bpm}")
+                tempo = bpm
+            else:
+                logger.info("Detecting tempo...")
+                tempo = self.tempo_detector.detect(audio, sr)
             logger.info(f"Detected tempo: {tempo} (type={type(tempo).__name__})")
 
-            logger.info("Detecting key...")
-            key = self.key_detector.detect(audio, sr)
-            logger.info(f"Detected key: {key} (type={type(key).__name__})")
+            if key is not None:
+                logger.info(f"Using user-supplied key: {key}")
+                detected_key = key
+            else:
+                logger.info("Detecting key...")
+                detected_key = self.key_detector.detect(audio, sr)
+                logger.info(f"Detected key: {detected_key} (type={type(detected_key).__name__})")
 
             logger.info("Detecting onsets...")
             onsets = self.onset_detector.detect(audio, sr)
@@ -87,8 +106,9 @@ class SegmentationService:
             notes = self._segment_notes(onsets, pitches, tempo, audio, sr)
             logger.info(f"Segmented into {len(notes)} notes")
 
+            ts = time_signature or "4/4"
             logger.info("Quantizing notes...")
-            notes = self.quantizer.quantize_notes(notes, tempo, time_signature="4/4")
+            notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
             logger.info(f"Quantized {len(notes)} notes")
         except Exception as exc:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)
@@ -118,8 +138,8 @@ class SegmentationService:
         result = TranscriptionData(
             notes=note_data,
             tempo=int(tempo),
-            key=str(key),
-            time_signature="4/4",
+            key=str(detected_key),
+            time_signature=ts,
             instrument=instrument,
         )
         logger.info("Transcription completed successfully")

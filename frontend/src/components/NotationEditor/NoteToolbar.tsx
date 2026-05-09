@@ -11,6 +11,7 @@ export const NoteToolbar: React.FC = () => {
   const updateNote = useProjectStore((state) => state.updateNote);
   const deleteNote = useProjectStore((state) => state.deleteNote);
   const insertNote = useProjectStore((state) => state.insertNote);
+  const shiftAllOctaves = useProjectStore((state) => state.shiftAllOctaves);
   const corrections = useProjectStore((state) => state.corrections);
   const verificationConfidence = useProjectStore((state) => state.verificationConfidence);
   const setCorrections = useProjectStore((state) => state.setCorrections);
@@ -19,13 +20,12 @@ export const NoteToolbar: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Find selected note
   const selectedNote = useMemo(
     () => notes.find((n) => n.id === selectedNoteId),
     [notes, selectedNoteId]
   );
 
-  if (!selectedNote) {
+  if (!selectedNote && notes.length === 0) {
     return null;
   }
 
@@ -46,62 +46,42 @@ export const NoteToolbar: React.FC = () => {
     return `${note}${validOctave}`;
   };
 
-  // Handle pitch up
   const handlePitchUp = () => {
+    if (!selectedNote || !selectedNoteId) return;
     const { note, octave } = parsePitch(selectedNote.pitch);
     const currentIndex = pitchNotes.indexOf(note);
-    
     if (currentIndex === -1) return;
-
     let newIndex = currentIndex + 1;
     let newOctave = octave;
-
-    // Wrap around octave
-    if (newIndex >= pitchNotes.length) {
-      newIndex = 0;
-      newOctave += 1;
-    }
-
+    if (newIndex >= pitchNotes.length) { newIndex = 0; newOctave += 1; }
     const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId!, { pitch: newPitch });
-    console.log(`🎵 Pitch up: ${selectedNote.pitch} → ${newPitch}`);
+    updateNote(selectedNoteId, { pitch: newPitch });
   };
 
-  // Handle pitch down
   const handlePitchDown = () => {
+    if (!selectedNote || !selectedNoteId) return;
     const { note, octave } = parsePitch(selectedNote.pitch);
     const currentIndex = pitchNotes.indexOf(note);
-    
     if (currentIndex === -1) return;
-
     let newIndex = currentIndex - 1;
     let newOctave = octave;
-
-    // Wrap around octave
-    if (newIndex < 0) {
-      newIndex = pitchNotes.length - 1;
-      newOctave -= 1;
-    }
-
+    if (newIndex < 0) { newIndex = pitchNotes.length - 1; newOctave -= 1; }
     const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId!, { pitch: newPitch });
-    console.log(`🎵 Pitch down: ${selectedNote.pitch} → ${newPitch}`);
+    updateNote(selectedNoteId, { pitch: newPitch });
   };
 
-  // Handle duration change
   const handleDurationChange = (duration: string) => {
-    updateNote(selectedNoteId!, { duration });
-    console.log(`⏱️  Duration changed: ${selectedNote.duration} → ${duration}`);
+    if (!selectedNoteId) return;
+    updateNote(selectedNoteId, { duration });
   };
 
-  // Handle delete note
   const handleDeleteNote = () => {
-    deleteNote(selectedNoteId!);
-    console.log(`🗑️  Note deleted: ${selectedNote.pitch}`);
+    if (!selectedNoteId) return;
+    deleteNote(selectedNoteId);
   };
 
-  // Handle add rest after note
   const handleAddRest = () => {
+    if (!selectedNote || !selectedNoteId) return;
     const restNote: NoteData = {
       id: `rest-${Date.now()}`,
       pitch: 'rest',
@@ -112,9 +92,7 @@ export const NoteToolbar: React.FC = () => {
       confidence: 1,
       llmCorrected: false,
     };
-
-    insertNote(selectedNoteId!, restNote);
-    console.log(`⏸️  Rest added after note`);
+    insertNote(selectedNoteId, restNote);
   };
 
   // Handle verify with AI
@@ -177,110 +155,133 @@ export const NoteToolbar: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 mt-4">
+      {/* Octave section — always visible */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm font-semibold text-blue-900">
-          Note: {selectedNote.pitch} ({selectedNote.duration})
-        </span>
+        <span className="text-xs font-medium text-gray-700">Octave:</span>
+        <button
+          onClick={() => shiftAllOctaves(1)}
+          className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600 text-sm"
+          title="Shift all notes up one octave"
+        >
+          ↑ All up
+        </button>
+        <button
+          onClick={() => shiftAllOctaves(-1)}
+          className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600 text-sm"
+          title="Shift all notes down one octave"
+        >
+          ↓ All down
+        </button>
       </div>
 
-      {/* Pitch Controls */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-700">Pitch:</span>
-          <button
-            onClick={handlePitchDown}
-            className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
-            title="Pitch down (semitone)"
-          >
-            ▼
-          </button>
-          <span className="text-sm font-semibold text-gray-700 w-12 text-center">
-            {selectedNote.pitch}
-          </span>
-          <button
-            onClick={handlePitchUp}
-            className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
-            title="Pitch up (semitone)"
-          >
-            ▲
-          </button>
-        </div>
-      </div>
+      {selectedNote && (
+        <>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-semibold text-blue-900">
+              Note: {selectedNote.pitch} ({selectedNote.duration})
+            </span>
+          </div>
 
-      {/* Duration Controls */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs font-medium text-gray-700">Duration:</span>
-        <div className="flex gap-1.5">
-          {durationButtons.map((duration) => (
+          {/* Pitch Controls */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700">Pitch:</span>
+              <button
+                onClick={handlePitchDown}
+                className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
+                title="Pitch down (semitone)"
+              >
+                ▼
+              </button>
+              <span className="text-sm font-semibold text-gray-700 w-12 text-center">
+                {selectedNote.pitch}
+              </span>
+              <button
+                onClick={handlePitchUp}
+                className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
+                title="Pitch up (semitone)"
+              >
+                ▲
+              </button>
+            </div>
+          </div>
+
+          {/* Duration Controls */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs font-medium text-gray-700">Duration:</span>
+            <div className="flex gap-1.5">
+              {durationButtons.map((duration) => (
+                <button
+                  key={duration}
+                  onClick={() => handleDurationChange(duration)}
+                  className={`px-3 py-1.5 rounded font-semibold transition ${
+                    selectedNote.duration === duration
+                      ? 'bg-blue-600 text-white border border-blue-700'
+                      : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 active:bg-blue-100'
+                  }`}
+                  title={`Set duration to ${duration}`}
+                >
+                  {durationLabels[duration]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <button
-              key={duration}
-              onClick={() => handleDurationChange(duration)}
-              className={`px-3 py-1.5 rounded font-semibold transition ${
-                selectedNote.duration === duration
-                  ? 'bg-blue-600 text-white border border-blue-700'
-                  : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 active:bg-blue-100'
-              }`}
-              title={`Set duration to ${duration}`}
+              onClick={handleAddRest}
+              className="px-4 py-1.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded font-medium text-sm transition"
+              title="Add rest after this note"
             >
-              {durationLabels[duration]}
+              + Rest
             </button>
-          ))}
-        </div>
-      </div>
+            <button
+              onClick={handleDeleteNote}
+              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded font-medium text-sm transition"
+              title="Delete this note"
+            >
+              Delete
+            </button>
+            <button
+              onClick={handleVerify}
+              disabled={isVerifying || notes.length === 0}
+              className={`ml-auto px-4 py-1.5 rounded font-medium text-sm transition flex items-center gap-2 ${
+                isVerifying || notes.length === 0
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                  : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white'
+              }`}
+              title={notes.length === 0 ? 'No notes to verify' : 'Verify transcription with AI'}
+            >
+              {isVerifying ? (
+                <>
+                  <span className="animate-spin">⟳</span>
+                  Verifying...
+                </>
+              ) : (
+                'Verify with AI'
+              )}
+            </button>
+          </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleAddRest}
-          className="px-4 py-1.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded font-medium text-sm transition"
-          title="Add rest after this note"
-        >
-          + Rest
-        </button>
-        <button
-          onClick={handleDeleteNote}
-          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded font-medium text-sm transition"
-          title="Delete this note"
-        >
-          Delete
-        </button>
-        <button
-          onClick={handleVerify}
-          disabled={isVerifying || notes.length === 0}
-          className={`ml-auto px-4 py-1.5 rounded font-medium text-sm transition flex items-center gap-2 ${
-            isVerifying || notes.length === 0
-              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white'
-          }`}
-          title={notes.length === 0 ? 'No notes to verify' : 'Verify transcription with AI'}
-        >
-          {isVerifying ? (
-            <>
-              <span className="animate-spin">⟳</span>
-              Verifying...
-            </>
-          ) : (
-            <>🤖 Verify with AI</>
+          {/* Info */}
+          <div className="mt-3 text-xs text-blue-700 bg-white bg-opacity-50 rounded px-2 py-1">
+            <p>
+              Confidence: {(selectedNote.confidence * 100).toFixed(0)}% |
+              Velocity: {selectedNote.velocity} |
+              Start: {selectedNote.startBeat.toFixed(2)} beat
+            </p>
+          </div>
+
+          {/* Suggestions Panel */}
+          {showSuggestions && corrections.length > 0 && (
+            <SuggestionsPanel
+              corrections={corrections}
+              confidence={verificationConfidence}
+              onClose={() => setShowSuggestions(false)}
+            />
           )}
-        </button>
-      </div>
-
-      {/* Info */}
-      <div className="mt-3 text-xs text-blue-700 bg-white bg-opacity-50 rounded px-2 py-1">
-        <p>
-          Confidence: {(selectedNote.confidence * 100).toFixed(0)}% |
-          Velocity: {selectedNote.velocity} |
-          Start: {selectedNote.startBeat.toFixed(2)} beat
-        </p>
-      </div>
-
-      {/* Suggestions Panel */}
-      {showSuggestions && corrections.length > 0 && (
-        <SuggestionsPanel
-          corrections={corrections}
-          confidence={verificationConfidence}
-          onClose={() => setShowSuggestions(false)}
-        />
+        </>
       )}
     </div>
   );
