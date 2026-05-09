@@ -151,37 +151,52 @@ class SegmentationService:
 
         rms_max = max(rms_values) if rms_values else 1.0
 
+        import numpy as _np
+
+        # Build arrays for fast nearest-pitch lookup
+        pitch_times = _np.array([p['time_ms'] / 1000.0 for p in pitches]) if pitches else _np.array([])
+
         for i, onset in enumerate(onsets):
+            next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
+
+            # Prefer pitches strictly within the onset window
             segment_pitches = [
                 p for p in pitches
-                if onset <= (p['time_ms'] / 1000) < (onsets[i + 1] if i + 1 < len(onsets) else float('inf'))
+                if onset <= (p['time_ms'] / 1000) < next_onset
             ]
 
-            if segment_pitches:
-                import numpy as _np
+            # Fallback: nearest pitch within 300 ms of the onset
+            if not segment_pitches and len(pitch_times) > 0:
+                dists = _np.abs(pitch_times - onset)
+                nearest_idx = int(_np.argmin(dists))
+                if dists[nearest_idx] < 0.3:
+                    segment_pitches = [pitches[nearest_idx]]
 
-                median_pitch = _np.median([p['frequency'] for p in segment_pitches])
-                median_note = self.pitch_detector._frequency_to_note(median_pitch)
-                avg_confidence = float(_np.mean([p['confidence'] for p in segment_pitches]))
+            if not segment_pitches:
+                logger.debug(f"Onset {i} at {onset:.3f}s: no pitch found, skipping")
+                continue
 
-                next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
-                duration_sec = next_onset - onset
-                gap_sec = next_onset - onset  # For mono, gap == duration until next onset
+            median_pitch = float(_np.median([p['frequency'] for p in segment_pitches]))
+            median_note = self.pitch_detector._frequency_to_note(median_pitch)
+            avg_confidence = float(_np.mean([p['confidence'] for p in segment_pitches]))
 
-                start_beat = onset * tempo / 60.0
-                measure = int(start_beat // beats_per_measure) + 1
+            duration_sec = next_onset - onset
+            start_beat = onset * tempo / 60.0
+            measure = int(start_beat // beats_per_measure) + 1
 
-                velocity = _rms_to_velocity(rms_values[i], rms_max)
-                articulation = _detect_articulation(duration_sec, gap_sec)
+            velocity = _rms_to_velocity(rms_values[i], rms_max)
+            articulation = _detect_articulation(duration_sec, duration_sec)
 
-                notes.append({
-                    "note": median_note,
-                    "start_beat": start_beat,
-                    "measure": measure,
-                    "duration_sec": duration_sec,
-                    "confidence": avg_confidence,
-                    "velocity": velocity,
-                    "articulation": articulation,
-                })
+            logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={avg_confidence:.2f})")
+            notes.append({
+                "note": median_note,
+                "start_beat": start_beat,
+                "measure": measure,
+                "duration_sec": duration_sec,
+                "confidence": avg_confidence,
+                "velocity": velocity,
+                "articulation": articulation,
+            })
 
+        logger.info(f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitch frames → {len(notes)} notes")
         return notes

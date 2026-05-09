@@ -59,7 +59,7 @@ class PitchDetector:
             if np.isnan(f_val) or np.isnan(p_val):
                 continue
             
-            if v_val and p_val > 0.7 and min_freq <= f_val <= max_freq:
+            if v_val and p_val > 0.5 and min_freq <= f_val <= max_freq:
                 note = self._frequency_to_note(f_val)
                 results.append({
                     "time_ms": t_val * 1000,
