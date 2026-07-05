@@ -1,5 +1,7 @@
 # MelodyScribe
 
+[![CI](https://github.com/kholeksii/MelodyScribeOk/actions/workflows/ci.yml/badge.svg)](https://github.com/kholeksii/MelodyScribeOk/actions/workflows/ci.yml)
+
 Desktop app for transcribing monophonic melodies from audio into sheet music.  
 Upload WAV/MP3/M4A or record from your mic → get notes → edit → export PDF or MusicXML.
 
