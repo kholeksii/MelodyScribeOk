@@ -1,6 +1,8 @@
+
 from pydantic import BaseModel
-from typing import List
+
 from .note import NoteData
+
 
 class ProjectMetadata(BaseModel):
     title: str
@@ -12,4 +14,4 @@ class ProjectMetadata(BaseModel):
 class Project(BaseModel):
     version: str = "1.0"
     metadata: ProjectMetadata
-    notes: List[NoteData]
+    notes: list[NoteData]

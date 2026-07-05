@@ -31,7 +31,7 @@ export const ExportButton: React.FC = () => {
       measure: note.measure,
       velocity: note.velocity,
       confidence: note.confidence,
-      llmCorrected: note.llmCorrected,
+      theoryCorrected: note.theoryCorrected,
     })),
   });
 

@@ -1,33 +1,27 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
 import logging
 
-logger = logging.getLogger(__name__)
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
+from ...models.api import ApiResponse, ok
 from ...models.note import NoteData
 from ...services.theory_checker import TheoryChecker
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 class VerifyRequest(BaseModel):
     """Request model for theory-based verification."""
-    notes: List[NoteData]
+    notes: list[NoteData]
     instrument: str
     tempo: int
     key: str
     time_signature: str = "4/4"
 
 
-class VerifyResponse(BaseModel):
-    """Response model for verification."""
-    success: bool
-    data: dict
-    error: Optional[str] = None
-
-
-@router.post("/api/verify", response_model=VerifyResponse)
+@router.post("/api/verify", response_model=ApiResponse[dict])
 async def verify_notes(request: VerifyRequest):
     """
     Verify transcribed notes using music theory rules.
@@ -54,7 +48,4 @@ async def verify_notes(request: VerifyRequest):
 
     logger.info(f"Verification complete: {len(result.get('corrections', []))} corrections")
 
-    return VerifyResponse(
-        success=True,
-        data=result,
-    )
+    return ok(result)

@@ -48,7 +48,7 @@ notes_for_okh.txt
 
 # Audio files (uploaded/test files)
 backend/uploads/
-tests/
+/tests/
 *.wav
 *.mp3
 *.flac

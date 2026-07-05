@@ -3,6 +3,5 @@ uvicorn[standard]==0.30.0
 python-multipart==0.0.9
 pydantic==2.7.0
 librosa==0.10.2
-aubio==0.4.9
 music21==9.1.0
 pydub==0.25.1

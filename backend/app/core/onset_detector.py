@@ -1,9 +1,9 @@
-from typing import List
+
 
 class OnsetDetector:
-    def detect(self, audio, sr: int) -> List[float]:
-        import numpy as np
+    def detect(self, audio, sr: int) -> list[float]:
         import librosa
+        import numpy as np
 
         # Ensure audio is float32 and mono
         if audio.dtype != np.float32:
@@ -13,7 +13,9 @@ class OnsetDetector:
 
         hop_length = 512
         try:
-            onset_frames = librosa.onset.onset_detect(y=audio, sr=sr, hop_length=hop_length, units='time')
+            onset_frames = librosa.onset.onset_detect(
+                y=audio, sr=sr, hop_length=hop_length, units="time"
+            )
         except Exception as exc:
             raise RuntimeError(f"Onset detection failed: {exc}") from exc
 

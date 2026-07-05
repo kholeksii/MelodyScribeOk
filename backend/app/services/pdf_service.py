@@ -1,10 +1,9 @@
 import logging
-from typing import List
 
-from music21 import stream, note, meter, key, tempo, metadata
+from music21 import key, metadata, meter, note, stream, tempo
 
-from ..models.project import Project
 from ..models.note import NoteData
+from ..models.project import Project
 
 logger = logging.getLogger(__name__)
 

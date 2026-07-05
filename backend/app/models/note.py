@@ -1,5 +1,6 @@
-from pydantic import BaseModel
-from typing import List, Optional
+
+from pydantic import AliasChoices, BaseModel, Field
+
 
 class NoteData(BaseModel):
     id: str
@@ -9,15 +10,15 @@ class NoteData(BaseModel):
     measure: int
     velocity: int
     confidence: float
-    llm_corrected: bool = False
-    articulation: Optional[str] = None  # "staccato" | "legato" | None
-
-class TranscriptionResult(BaseModel):
-    success: bool
-    data: "TranscriptionData"
+    # "llm_corrected" accepted on input for pre-rename project files
+    theory_corrected: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("theory_corrected", "llm_corrected"),
+    )
+    articulation: str | None = None  # "staccato" | "legato" | None
 
 class TranscriptionData(BaseModel):
-    notes: List[NoteData]
+    notes: list[NoteData]
     tempo: int
     key: str
     time_signature: str

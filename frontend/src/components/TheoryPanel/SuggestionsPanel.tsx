@@ -27,14 +27,19 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
     [corrections, processedIndices]
   );
 
-  const handleAccept = (index: number, correction: Correction) => {
+  const applyCorrection = (correction: Correction) => {
     const note = notes[correction.noteIndex];
-    if (note) {
-      const updates: any = {};
-      updates[correction.field] = correction.newValue;
-      updateNote(note.id, { ...updates, llmCorrected: true });
-      console.log(`✅ Accepted correction #${index}: ${correction.field} → ${correction.newValue}`);
-    }
+    if (!note) return;
+    const updates =
+      correction.field === 'pitch'
+        ? { pitch: correction.newValue }
+        : { duration: correction.newValue };
+    updateNote(note.id, { ...updates, theoryCorrected: true });
+  };
+
+  const handleAccept = (index: number, correction: Correction) => {
+    applyCorrection(correction);
+    console.log(`✅ Accepted correction #${index}: ${correction.field} → ${correction.newValue}`);
     setProcessedIndices((prev) => new Set([...prev, index]));
   };
 
@@ -46,12 +51,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   const handleAcceptAll = () => {
     corrections.forEach((correction, idx) => {
       if (!processedIndices.has(idx)) {
-        const note = notes[correction.noteIndex];
-        if (note) {
-          const updates: any = {};
-          updates[correction.field] = correction.newValue;
-          updateNote(note.id, { ...updates, llmCorrected: true });
-        }
+        applyCorrection(correction);
       }
     });
     setProcessedIndices(new Set(corrections.map((_, idx) => idx)));
@@ -71,7 +71,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
     <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-300 rounded-lg p-4 mt-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-amber-900">
-          🤖 LLM Verification Results
+          🎼 Theory Verification Results
         </h3>
         <button
           onClick={handleClose}

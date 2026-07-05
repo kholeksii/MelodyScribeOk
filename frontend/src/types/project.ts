@@ -14,11 +14,6 @@ export interface Project {
   notes: NoteData[];
 }
 
-export interface TranscriptionResult {
-  success: boolean;
-  data: TranscriptionData;
-}
-
 export interface TranscriptionData {
   notes: NoteData[];
   tempo: number;

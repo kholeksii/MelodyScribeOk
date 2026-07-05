@@ -1,9 +1,11 @@
-import os
 import uuid
 from pathlib import Path
-from fastapi import UploadFile, HTTPException
+
+from fastapi import UploadFile
+
 # from pydub import AudioSegment  # Temporarily disabled due to Python 3.13 compatibility
 from ..config import settings
+
 
 class AudioService:
     def __init__(self):
@@ -13,6 +15,8 @@ class AudioService:
     async def upload_file(self, file: UploadFile) -> dict:
         # Check file extension
         allowed_extensions = {'.wav', '.mp3', '.flac', '.ogg', '.m4a', '.webm'}
+        if not file.filename:
+            raise ValueError("Uploaded file has no filename.")
         file_extension = Path(file.filename).suffix.lower()
         if file_extension not in allowed_extensions:
             raise ValueError("Unsupported audio format. Use WAV, MP3, FLAC, or OGG.")

@@ -82,7 +82,6 @@
 | **Python 3.11+** | Main backend language                      |
 | **FastAPI**      | HTTP API server                            |
 | **librosa**      | Audio analysis + pitch detection (pyin)    |
-| **aubio**        | Onset detection                            |
 | **music21**      | Music notation, theory, MusicXML export    |
 | **pydub**        | Audio format conversion                    |
 
@@ -122,7 +121,7 @@ Input:  pitch data + raw audio
 Output: array [{pitch, start_ms, duration_ms, velocity}, ...]
 ```
 
-- **aubio** onset detection for note attack detection
+- **librosa** onset detection for note attack detection
 - Merging adjacent frames with identical pitch into notes
 - Duration quantization to musical values (whole, half, quarter, eighth, sixteenth)
 - Detecting rests between notes
@@ -202,7 +201,7 @@ GET  /api/health          — health check
       "measure": 1,
       "velocity": 80,
       "confidence": 0.95,
-      "llmCorrected": false
+      "theoryCorrected": false
     }
   ],
   "audioFile": "base64_or_path",
@@ -459,7 +458,7 @@ melody-scribe/
 
 ### Onset Detection (`backend/app/core/onset_detector.py`)
 
-- Use `aubio.onset` with `default` method
+- Use `librosa.onset.onset_detect`
 - Minimum distance between onsets: 50ms
 - Combine with `librosa.onset.onset_detect` for better accuracy
 
@@ -513,7 +512,6 @@ uvicorn[standard]==0.30.*
 python-multipart==0.0.*
 pydantic==2.*
 librosa==0.10.*
-aubio==0.4.*
 music21==9.*
 pydub==0.25.*
 httpx==0.27.*

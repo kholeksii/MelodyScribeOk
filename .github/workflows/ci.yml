@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libsndfile1
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check app tests
+      - name: Type-check (mypy)
+        run: mypy app
+      - name: Tests
+        run: python -m pytest tests/ -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # npm >= 11 required: the lock file is written by npm 11 (Node 26 locally),
+          # which omits "optional": true on platform-specific entries; npm 10 then
+          # tries to install them on the wrong OS and fails with EBADPLATFORM
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm run test
+      - name: Build
+        run: npm run build

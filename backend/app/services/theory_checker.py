@@ -1,11 +1,11 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 from ..models.note import NoteData
 
 logger = logging.getLogger(__name__)
 
-INSTRUMENT_RANGES: Dict[str, tuple] = {
+INSTRUMENT_RANGES: dict[str, tuple] = {
     "piano": ("A0", "C8"),
     "violin": ("G3", "E7"),
     "guitar": ("E2", "E6"),
@@ -13,7 +13,7 @@ INSTRUMENT_RANGES: Dict[str, tuple] = {
 
 NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-DURATION_BEATS: Dict[str, float] = {
+DURATION_BEATS: dict[str, float] = {
     "whole": 4.0,
     "half": 2.0,
     "quarter": 1.0,
@@ -54,13 +54,13 @@ class TheoryChecker:
 
     def verify(
         self,
-        notes: List[NoteData],
+        notes: list[NoteData],
         instrument: str,
         tempo: int,
         key: str,
         time_signature: str = "4/4",
-    ) -> Dict[str, Any]:
-        corrections: List[Dict[str, Any]] = []
+    ) -> dict[str, Any]:
+        corrections: list[dict[str, Any]] = []
 
         corrections.extend(self._check_instrument_range(notes, instrument))
         corrections.extend(self._check_intervals(notes))
@@ -79,9 +79,9 @@ class TheoryChecker:
         }
 
     def _check_instrument_range(
-        self, notes: List[NoteData], instrument: str
-    ) -> List[Dict[str, Any]]:
-        corrections = []
+        self, notes: list[NoteData], instrument: str
+    ) -> list[dict[str, Any]]:
+        corrections: list[dict[str, Any]] = []
         range_tuple = INSTRUMENT_RANGES.get(instrument)
         if not range_tuple:
             return corrections
@@ -116,7 +116,7 @@ class TheoryChecker:
 
         return corrections
 
-    def _check_intervals(self, notes: List[NoteData]) -> List[Dict[str, Any]]:
+    def _check_intervals(self, notes: list[NoteData]) -> list[dict[str, Any]]:
         """Flag unrealistic pitch jumps (> 12 semitones between consecutive notes)."""
         corrections = []
         max_jump = 12
@@ -146,13 +146,13 @@ class TheoryChecker:
         return corrections
 
     def _check_measure_fill(
-        self, notes: List[NoteData], time_signature: str
-    ) -> List[Dict[str, Any]]:
+        self, notes: list[NoteData], time_signature: str
+    ) -> list[dict[str, Any]]:
         """Check that notes within each measure add up to the correct beat count."""
         corrections = []
         expected_beats = _beats_per_measure(time_signature)
 
-        measures: Dict[int, List[tuple]] = {}
+        measures: dict[int, list[tuple]] = {}
         for i, note in enumerate(notes):
             measures.setdefault(note.measure, []).append((i, note))
 
@@ -175,8 +175,8 @@ class TheoryChecker:
         return corrections
 
     def _check_enharmonic(
-        self, notes: List[NoteData], key: str
-    ) -> List[Dict[str, Any]]:
+        self, notes: list[NoteData], key: str
+    ) -> list[dict[str, Any]]:
         """Normalize enharmonic spelling based on key signature preference."""
         corrections = []
 
@@ -217,7 +217,7 @@ class TheoryChecker:
         return corrections
 
     def _calculate_confidence(
-        self, notes: List[NoteData], corrections: List[Dict[str, Any]]
+        self, notes: list[NoteData], corrections: list[dict[str, Any]]
     ) -> float:
         if not notes:
             return 0.0
