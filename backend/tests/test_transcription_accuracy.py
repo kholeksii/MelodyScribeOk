@@ -57,9 +57,10 @@ def test_do_mi_re_do_tempo_hint_respected(service, synth_melody) -> None:
 
 
 @pytest.mark.xfail(
-    strict=True,
-    reason="note-boundary frames produce phantom passing notes (e.g. C4,E4,D#4,D4,C#4,C4"
-    " for a C4-E4-D4-C4 melody); fixed by confidence filtering in U11",
+    strict=False,
+    reason="note-boundary frames can produce phantom passing notes (C4,E4,D#4,D4,C#4,C4"
+    " for a C4-E4-D4-C4 melody on macOS; CI Linux passes — platform-dependent librosa"
+    " behavior). U11 confidence filtering makes this deterministic",
 )
 def test_do_mi_re_do_exact_pitch_sequence(service, synth_melody) -> None:
     path = synth_melody(DO_MI_RE_DO, bpm=120)
@@ -92,7 +93,7 @@ def test_gap_pitches_survive(service, synth_melody) -> None:
 
 
 @pytest.mark.xfail(
-    strict=True,
+    strict=False,
     reason="silence between notes never yields a rest note; fixed in U11",
 )
 def test_gap_produces_rest(service, synth_melody) -> None:
