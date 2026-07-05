@@ -1,4 +1,3 @@
-from typing import List, Dict
 
 # (fmin_hz, fmax_hz, frame_length)
 # fmin is practical melody minimum — avoids sub-harmonic confusion in pyin
@@ -10,7 +9,7 @@ INSTRUMENT_RANGES = {
 
 
 class PitchDetector:
-    def detect(self, audio, sr: int, instrument: str) -> List[Dict]:
+    def detect(self, audio, sr: int, instrument: str) -> list[dict]:
         if instrument not in INSTRUMENT_RANGES:
             raise ValueError(f"Unsupported instrument: {instrument}")
         min_freq, max_freq, frame_length = INSTRUMENT_RANGES[instrument]

@@ -1,7 +1,6 @@
 class TempoDetector:
     def detect(self, audio, sr: int) -> int:
         import librosa
-        import numpy as np
 
         tempo, _ = librosa.beat.beat_track(y=audio, sr=sr)
         

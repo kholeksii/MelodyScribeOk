@@ -21,7 +21,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
   keySignature,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const noteBoundingBoxes = useRef<Map<string, BoundingBox>>(new Map());
   const selectedNoteId = useProjectStore((state) => state.selectedNoteId);
   const playingNoteId = useProjectStore((state) => state.playingNoteId);
@@ -70,8 +70,8 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
     return null;
   };
 
-  // Handle SVG click
-  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+  // Handle SVG click (attached as a native listener on the VexFlow-created SVG)
+  const handleSvgClick = (e: MouseEvent) => {
     if (!svgRef.current) return;
 
     const svgRect = svgRef.current.getBoundingClientRect();
@@ -92,7 +92,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
   };
 
   // Handle mouse move for hover effect
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+  const handleSvgMouseMove = (e: MouseEvent) => {
     if (!svgRef.current) return;
 
     const svgRect = svgRef.current.getBoundingClientRect();
@@ -133,9 +133,17 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
           return;
         }
 
-        // Try to get Rest and BarNote classes - may not be available in all versions
-        const Rest = (Vex.Flow as any).Rest || null;
-        const BarNote = (Vex.Flow as any).BarNote || null;
+        // Notes get tagged with their NoteData id for click hit-testing
+        type Tickable = InstanceType<typeof StaveNote>;
+        type TaggedTickable = Tickable & { noteDataId?: string };
+
+        // Rest and BarNote classes may not be available in all VexFlow versions
+        const flowExtras = Vex.Flow as unknown as {
+          Rest?: new (opts: { duration: string }) => Tickable;
+          BarNote?: new () => Tickable;
+        };
+        const Rest = flowExtras.Rest ?? null;
+        const BarNote = flowExtras.BarNote ?? null;
 
         // Create a wrapper div for SVG with click handling
         const svgWrapper = document.createElement('div');
@@ -149,11 +157,11 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
         const context = renderer.getContext();
 
         // Get SVG element and add interactivity
-        const svg = svgWrapper.querySelector('svg') as SVGSVGElement;
+        const svg = svgWrapper.querySelector('svg');
         if (svg) {
-          (svgRef as any).current = svg;
-          svg.addEventListener('click', handleSvgClick as any);
-          svg.addEventListener('mousemove', handleSvgMouseMove as any);
+          svgRef.current = svg;
+          svg.addEventListener('click', handleSvgClick);
+          svg.addEventListener('mousemove', handleSvgMouseMove);
           svg.style.cursor = 'default';
         }
 
@@ -171,30 +179,29 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
         stave.setContext(context).draw();
 
         // Helper: convert a single NoteData to a VexFlow tickable
-        const makeVexNote = (note: (typeof notes)[0], idx: number) => {
+        const makeVexNote = (note: (typeof notes)[0], idx: number): TaggedTickable => {
           const duration = convertDurationToVexFlow(note.duration);
 
           if (note.pitch === 'rest') {
             console.log(`Rest ${idx}: duration=${note.duration} -> ${duration}`);
             if (Rest) {
               try {
-                const rest = new Rest({ duration });
-                (rest as any).noteDataId = note.id;
+                const rest = new Rest({ duration }) as TaggedTickable;
+                rest.noteDataId = note.id;
                 return rest;
               } catch (e) {
                 console.warn(`Failed to create Rest with Rest class, using fallback: ${e}`);
               }
             }
-            const vexRest = new StaveNote({ keys: ['b/4'], duration });
-            (vexRest as any).noteDataId = note.id;
-            (vexRest as any).isRest = true;
+            const vexRest = new StaveNote({ keys: ['b/4'], duration }) as TaggedTickable;
+            vexRest.noteDataId = note.id;
             return vexRest;
           }
 
           const pitch = convertPitchToVexFlow(note.pitch);
           console.log(`Note ${idx}: pitch=${note.pitch} -> ${pitch}, duration=${note.duration} -> ${duration}`);
-          const vexNote = new StaveNote({ keys: [pitch], duration });
-          (vexNote as any).noteDataId = note.id;
+          const vexNote = new StaveNote({ keys: [pitch], duration }) as TaggedTickable;
+          vexNote.noteDataId = note.id;
           return vexNote;
         };
 
@@ -207,7 +214,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
         });
 
         const sortedMeasures = Array.from(measureGroups.keys()).sort((a, b) => a - b);
-        const allTickables: any[] = [];
+        const allTickables: Tickable[] = [];
         let globalIdx = 0;
         sortedMeasures.forEach((measureNum, measureIdx) => {
           if (measureIdx > 0 && BarNote) {

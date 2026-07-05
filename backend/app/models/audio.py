@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class AudioUploadResponse(BaseModel):
     success: bool
     data: "AudioInfo"

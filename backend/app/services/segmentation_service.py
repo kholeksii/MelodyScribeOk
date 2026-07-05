@@ -1,17 +1,14 @@
-from pathlib import Path
-from typing import List, Dict, Optional
 import logging
 
-logger = logging.getLogger(__name__)
-
-from ..core.pitch_detector import PitchDetector
-from ..core.onset_detector import OnsetDetector
-from ..core.tempo_detector import TempoDetector
 from ..core.key_detector import KeyDetector
+from ..core.onset_detector import OnsetDetector
+from ..core.pitch_detector import PitchDetector
 from ..core.quantizer import Quantizer
-from ..models.note import TranscriptionData, NoteData
-from ..config import settings
+from ..core.tempo_detector import TempoDetector
 from ..errors import FfmpegMissingError
+from ..models.note import NoteData, TranscriptionData
+
+logger = logging.getLogger(__name__)
 
 try:
     import librosa
@@ -32,7 +29,7 @@ def _rms_to_velocity(rms: float, rms_max: float) -> int:
     return int(20 + ratio * 100)
 
 
-def _detect_articulation(duration_sec: float, gap_sec: float) -> Optional[str]:
+def _detect_articulation(duration_sec: float, gap_sec: float) -> str | None:
     """staccato if note is short relative to gap; legato if gap is very small."""
     if gap_sec <= 0:
         return None
@@ -56,9 +53,9 @@ class SegmentationService:
         self,
         file_path: str,
         instrument: str,
-        bpm: Optional[int] = None,
-        time_signature: Optional[str] = None,
-        key: Optional[str] = None,
+        bpm: int | None = None,
+        time_signature: str | None = None,
+        key: str | None = None,
     ) -> TranscriptionData:
         if librosa is None:
             raise RuntimeError("Audio analysis libraries are not installed.")
@@ -68,7 +65,8 @@ class SegmentationService:
 
         try:
             logger.info(f"Loading audio from {file_path}")
-            audio, sr = librosa.load(file_path, sr=44100, mono=True)
+            audio, loaded_sr = librosa.load(file_path, sr=44100, mono=True)
+            sr = int(loaded_sr)
             logger.info(f"Audio loaded: duration={len(audio)/sr:.2f}s, sr={sr}")
         except Exception as exc:
             err_str = str(exc).lower()
@@ -147,17 +145,17 @@ class SegmentationService:
 
     def _segment_notes(
         self,
-        onsets: List[float],
-        pitches: List[Dict],
+        onsets: list[float],
+        pitches: list[dict],
         tempo: int,
         audio=None,
         sr: int = 44100,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         notes = []
         beats_per_measure = 4
 
         # Pre-compute per-segment RMS values for velocity mapping
-        rms_values: List[float] = []
+        rms_values: list[float] = []
         for i, onset in enumerate(onsets):
             end = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
             if audio is not None and np is not None:
@@ -174,7 +172,9 @@ class SegmentationService:
         import numpy as _np
 
         # Build arrays for fast nearest-pitch lookup
-        pitch_times = _np.array([p['time_ms'] / 1000.0 for p in pitches]) if pitches else _np.array([])
+        pitch_times = (
+            _np.array([p["time_ms"] / 1000.0 for p in pitches]) if pitches else _np.array([])
+        )
 
         for i, onset in enumerate(onsets):
             next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
@@ -225,5 +225,7 @@ class SegmentationService:
                 "articulation": articulation,
             })
 
-        logger.info(f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitch frames → {len(notes)} notes")
+        logger.info(
+            f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitches -> {len(notes)} notes"
+        )
         return notes

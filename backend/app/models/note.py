@@ -1,5 +1,6 @@
+
 from pydantic import AliasChoices, BaseModel, Field
-from typing import List, Optional
+
 
 class NoteData(BaseModel):
     id: str
@@ -14,14 +15,14 @@ class NoteData(BaseModel):
         default=False,
         validation_alias=AliasChoices("theory_corrected", "llm_corrected"),
     )
-    articulation: Optional[str] = None  # "staccato" | "legato" | None
+    articulation: str | None = None  # "staccato" | "legato" | None
 
 class TranscriptionResult(BaseModel):
     success: bool
     data: "TranscriptionData"
 
 class TranscriptionData(BaseModel):
-    notes: List[NoteData]
+    notes: list[NoteData]
     tempo: int
     key: str
     time_signature: str

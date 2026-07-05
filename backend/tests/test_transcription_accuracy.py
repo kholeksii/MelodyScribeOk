@@ -3,7 +3,6 @@
 Pins current pipeline behavior so algorithm changes (U9-U14) are measurable.
 Calls SegmentationService.transcribe() directly (no HTTP) for speed.
 """
-from typing import List
 
 import pytest
 
@@ -20,10 +19,10 @@ def service() -> SegmentationService:
     return SegmentationService()
 
 
-def _sounding_pitches(result: TranscriptionData) -> List[str]:
+def _sounding_pitches(result: TranscriptionData) -> list[str]:
     """Pitch sequence without rests, consecutive duplicates merged
     (guards against repeated-note splitting, see U11)."""
-    out: List[str] = []
+    out: list[str] = []
     for note in result.notes:
         if note.pitch == "rest":
             continue
@@ -32,7 +31,7 @@ def _sounding_pitches(result: TranscriptionData) -> List[str]:
     return out
 
 
-def pitch_accuracy(expected: List[str], actual: List[str]) -> float:
+def pitch_accuracy(expected: list[str], actual: list[str]) -> float:
     """Fraction of expected pitches found at the right ordinal position."""
     if not expected:
         return 1.0
@@ -42,7 +41,7 @@ def pitch_accuracy(expected: List[str], actual: List[str]) -> float:
     return hits / len(expected)
 
 
-def octave_tolerant_accuracy(expected: List[str], actual: List[str]) -> float:
+def octave_tolerant_accuracy(expected: list[str], actual: list[str]) -> float:
     """Same, but ignoring the octave digit."""
     strip = lambda p: p.rstrip("0123456789")  # noqa: E731
     return pitch_accuracy([strip(p) for p in expected], [strip(p) for p in actual])

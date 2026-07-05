@@ -1,22 +1,22 @@
-from typing import Optional
+import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from pathlib import Path
-import logging
+
+from ...config import settings
+from ...errors import FfmpegMissingError
+from ...models.note import TranscriptionResult
 
 logger = logging.getLogger(__name__)
 
-from ...models.note import TranscriptionResult
-from ...config import settings
-from ...errors import FfmpegMissingError
 
 class TranscribeRequest(BaseModel):
     file_id: str
     instrument: str
-    bpm: Optional[int] = None
-    time_signature: Optional[str] = None
-    key: Optional[str] = None
+    bpm: int | None = None
+    time_signature: str | None = None
+    key: str | None = None
 
 router = APIRouter()
 

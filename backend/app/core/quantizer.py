@@ -1,7 +1,5 @@
-from typing import List, Dict, Tuple
 
-
-BEAT_VALUES: List[Tuple[str, float]] = [
+BEAT_VALUES: list[tuple[str, float]] = [
     ("whole",    4.0),
     ("half.",    3.0),
     ("half",     2.0),
@@ -55,10 +53,10 @@ class Quantizer:
 
     def quantize_notes(
         self,
-        raw_notes: List[Dict],
+        raw_notes: list[dict],
         bpm: int,
         time_signature: str = "4/4",
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Quantize a list of notes with full measure-context awareness.
 
@@ -113,12 +111,12 @@ class Quantizer:
 
         return notes
 
-    def _fill_measures(self, notes: List[Dict], bpb: float) -> List[Dict]:
+    def _fill_measures(self, notes: list[dict], bpb: float) -> list[dict]:
         """
         If a measure is under-filled, extend the last note in it to fill
         the remaining beats (capped at a whole note).
         """
-        measures: Dict[int, List[int]] = {}
+        measures: dict[int, list[int]] = {}
         for i, n in enumerate(notes):
             m = n["measure"]
             measures.setdefault(m, []).append(i)

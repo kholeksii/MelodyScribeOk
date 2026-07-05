@@ -1,6 +1,26 @@
-import { AudioInfo, Instrument, TranscriptionData, NoteData, Project } from '../types';
+import { AudioInfo, Correction, Instrument, TranscriptionData, NoteData, Project } from '../types';
 
 const BASE_URL = "http://localhost:8000/api";
+
+/** Note shape as serialized by the Python backend (snake_case). */
+interface BackendNote {
+  id: string;
+  pitch: string;
+  duration: string;
+  start_beat: number;
+  measure: number;
+  velocity?: number;
+  confidence?: number;
+  theory_corrected?: boolean;
+  llm_corrected?: boolean; // pre-rename files
+  articulation?: string | null;
+}
+
+export interface VerifyResult {
+  success: boolean;
+  data: { corrections?: Correction[]; confidence?: number; error?: string };
+  error?: string | null;
+}
 
 export const apiClient = {
   uploadAudio: async (file: File): Promise<AudioInfo> => {
@@ -69,15 +89,15 @@ export const apiClient = {
     const data = result.data;
     
     // Transform snake_case to camelCase
-    const notes: NoteData[] = data.notes.map((note: any) => ({
+    const notes: NoteData[] = data.notes.map((note: BackendNote) => ({
       id: note.id,
       pitch: note.pitch,
       duration: note.duration,
       startBeat: note.start_beat,
       measure: note.measure,
-      velocity: note.velocity,
-      confidence: note.confidence,
-      theoryCorrected: note.theory_corrected,
+      velocity: note.velocity ?? 80,
+      confidence: note.confidence ?? 0,
+      theoryCorrected: note.theory_corrected ?? false,
       articulation: note.articulation ?? null,
     }));
 
@@ -90,7 +110,7 @@ export const apiClient = {
     };
   },
 
-  verifyNotes: async (notes: NoteData[], instrument: string, tempo: number, key: string): Promise<any> => {
+  verifyNotes: async (notes: NoteData[], instrument: string, tempo: number, key: string): Promise<VerifyResult> => {
     // Convert camelCase to snake_case for backend
     const backendNotes = notes.map((note) => ({
       id: note.id,
@@ -139,7 +159,7 @@ export const apiClient = {
     const result = await response.json();
     if (!result.success) throw new Error(result.error || 'Import failed');
     const data = result.data;
-    const notes: NoteData[] = data.notes.map((note: any) => ({
+    const notes: NoteData[] = data.notes.map((note: BackendNote) => ({
       id: note.id,
       pitch: note.pitch,
       duration: note.duration,

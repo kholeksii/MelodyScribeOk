@@ -1,12 +1,13 @@
 import logging
+
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import Response
 
-logger = logging.getLogger(__name__)
-
-from ...models.project import Project
 from ...models.note import NoteData
+from ...models.project import Project
 from ...services.pdf_service import PDFService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -38,13 +39,23 @@ async def import_musicxml(file: UploadFile):
         raise HTTPException(status_code=400, detail="File must be .musicxml, .xml, or .mxl")
 
     try:
-        from music21 import converter, tempo as m21tempo, meter, key as m21key, note as m21note
+        from music21 import converter, meter, stream
+        from music21 import key as m21key
+        from music21 import note as m21note
+        from music21 import tempo as m21tempo
 
         content = await file.read()
         score = converter.parseData(content.decode("utf-8", errors="replace"))
+        if isinstance(score, stream.Opus):
+            first_score = score.scores.first()
+            if first_score is None:
+                raise HTTPException(status_code=422, detail="Empty MusicXML opus")
+            score = first_score
+        score_parts = score.parts if isinstance(score, stream.Score) else [score]
 
         # Metadata
-        title = (score.metadata.title if score.metadata and score.metadata.title else None) or "Imported Score"
+        has_title = score.metadata and score.metadata.title
+        title = score.metadata.title if has_title else "Imported Score"
 
         bpm = 120
         for el in score.flat.getElementsByClass(m21tempo.MetronomeMark):
@@ -66,7 +77,7 @@ async def import_musicxml(file: UploadFile):
 
         # Extract notes from first part only (monophonic)
         notes = []
-        for i, part in enumerate(score.parts):
+        for i, part in enumerate(score_parts):
             for idx, element in enumerate(part.flat.notesAndRests):
                 ql = float(element.duration.quarterLength)
                 start_beat = float(element.offset)

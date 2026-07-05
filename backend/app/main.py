@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .api.routes.audio import router as audio_router
+from .api.routes.export import router as export_router
 from .api.routes.transcribe import router as transcribe_router
 from .api.routes.verify import router as verify_router
-from .api.routes.export import router as export_router
 
 app = FastAPI(title="MelodyScribe Backend", version="0.1.0")
 

@@ -1,8 +1,10 @@
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, HTTPException
+
+from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from ...services.audio_service import AudioService
+
 from ...config import settings
+from ...services.audio_service import AudioService
 
 router = APIRouter(prefix="/api")
 audio_service = AudioService()
@@ -24,6 +26,13 @@ async def get_audio(file_id: str):
     for ext in (".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm"):
         path = upload_dir / f"{file_id}{ext}"
         if path.exists():
-            media_types = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".flac": "audio/flac", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".webm": "audio/webm"}
+            media_types = {
+                ".wav": "audio/wav",
+                ".mp3": "audio/mpeg",
+                ".flac": "audio/flac",
+                ".ogg": "audio/ogg",
+                ".m4a": "audio/mp4",
+                ".webm": "audio/webm",
+            }
             return FileResponse(path, media_type=media_types[ext])
     raise HTTPException(status_code=404, detail="Audio file not found")

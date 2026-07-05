@@ -1,12 +1,11 @@
 """Shared fixtures: programmatic WAV synthesis with known ground truth."""
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List, Tuple
 
+import librosa
 import numpy as np
 import pytest
 import soundfile as sf
-
-import librosa
 
 SAMPLE_RATE = 44100
 FADE_SEC = 0.010
@@ -24,7 +23,7 @@ def synth_melody(tmp_path: Path) -> SynthMelody:
     """
 
     def _synth(
-        notes: List[Tuple[str, float]],
+        notes: list[tuple[str, float]],
         bpm: int,
         sr: int = SAMPLE_RATE,
         filename: str = "melody.wav",

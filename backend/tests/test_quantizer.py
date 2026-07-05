@@ -43,7 +43,8 @@ class TestQuantizeNotes:
         )
         by_measure: dict[int, float] = {}
         for n in notes:
-            by_measure[n["measure"]] = by_measure.get(n["measure"], 0.0) + Quantizer.DURATION_MAP[n["duration"]]
+            beats = Quantizer.DURATION_MAP[n["duration"]]
+            by_measure[n["measure"]] = by_measure.get(n["measure"], 0.0) + beats
         assert by_measure == {1: 4.0, 2: 4.0}
 
     def test_measure_sums_in_3_4(self) -> None:
@@ -52,7 +53,8 @@ class TestQuantizeNotes:
         )
         by_measure: dict[int, float] = {}
         for n in notes:
-            by_measure[n["measure"]] = by_measure.get(n["measure"], 0.0) + Quantizer.DURATION_MAP[n["duration"]]
+            beats = Quantizer.DURATION_MAP[n["duration"]]
+            by_measure[n["measure"]] = by_measure.get(n["measure"], 0.0) + beats
         assert by_measure == {1: 3.0, 2: 3.0}
         assert [n["measure"] for n in notes] == [1, 1, 1, 2, 2, 2]
 

@@ -1,19 +1,19 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
 import logging
 
-logger = logging.getLogger(__name__)
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from ...models.note import NoteData
 from ...services.theory_checker import TheoryChecker
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 class VerifyRequest(BaseModel):
     """Request model for theory-based verification."""
-    notes: List[NoteData]
+    notes: list[NoteData]
     instrument: str
     tempo: int
     key: str
@@ -24,7 +24,7 @@ class VerifyResponse(BaseModel):
     """Response model for verification."""
     success: bool
     data: dict
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @router.post("/api/verify", response_model=VerifyResponse)
