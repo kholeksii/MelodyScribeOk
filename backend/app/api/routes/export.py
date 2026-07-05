@@ -81,7 +81,7 @@ async def import_musicxml(file: UploadFile):
                         measure=measure_num,
                         velocity=0,
                         confidence=1.0,
-                        llm_corrected=False,
+                        theory_corrected=False,
                     ))
                 elif isinstance(element, m21note.Note):
                     notes.append(NoteData(
@@ -92,7 +92,7 @@ async def import_musicxml(file: UploadFile):
                         measure=measure_num,
                         velocity=int(element.volume.velocity or 80),
                         confidence=1.0,
-                        llm_corrected=False,
+                        theory_corrected=False,
                     ))
             break  # first part only
 

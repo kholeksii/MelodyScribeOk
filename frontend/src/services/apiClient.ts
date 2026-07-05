@@ -77,7 +77,7 @@ export const apiClient = {
       measure: note.measure,
       velocity: note.velocity,
       confidence: note.confidence,
-      llmCorrected: note.llm_corrected,
+      theoryCorrected: note.theory_corrected,
       articulation: note.articulation ?? null,
     }));
 
@@ -100,7 +100,7 @@ export const apiClient = {
       measure: note.measure,
       velocity: note.velocity,
       confidence: note.confidence,
-      llm_corrected: note.llmCorrected,
+      theory_corrected: note.theoryCorrected,
     }));
 
     const response = await fetch(`${BASE_URL}/verify`, {
@@ -147,7 +147,7 @@ export const apiClient = {
       measure: note.measure,
       velocity: note.velocity ?? 80,
       confidence: note.confidence ?? 1.0,
-      llmCorrected: note.llm_corrected ?? false,
+      theoryCorrected: note.theory_corrected ?? note.llm_corrected ?? false,
     }));
     return {
       notes,

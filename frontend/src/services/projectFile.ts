@@ -1,6 +1,17 @@
 import JSZip from 'jszip';
-import { Project } from '../types';
+import { NoteData, Project } from '../types';
 import { useRecentProjectsStore } from '../store/recentProjectsStore';
+
+// .melody files saved before the theoryCorrected rename carry llmCorrected
+type StoredNoteData = Omit<NoteData, 'theoryCorrected'> & {
+  theoryCorrected?: boolean;
+  llmCorrected?: boolean;
+};
+
+function normalizeNote(note: StoredNoteData): NoteData {
+  const { llmCorrected, theoryCorrected, ...rest } = note;
+  return { ...rest, theoryCorrected: theoryCorrected ?? llmCorrected ?? false };
+}
 
 export async function saveProject(project: Project, audioBlob: Blob | null, filename?: string): Promise<Blob> {
   useRecentProjectsStore.getState().addRecent(filename ?? project.metadata.title);
@@ -24,7 +35,8 @@ export async function loadProject(file: File): Promise<{ project: Project; audio
 
   const projectJson = await zip.file('project.json')?.async('string');
   if (!projectJson) throw new Error('Invalid .melody file: missing project.json');
-  const project: Project = JSON.parse(projectJson);
+  const parsed = JSON.parse(projectJson) as Omit<Project, 'notes'> & { notes: StoredNoteData[] };
+  const project: Project = { ...parsed, notes: parsed.notes.map(normalizeNote) };
 
   let audioBlob: Blob | null = null;
   const audioEntry = Object.keys(zip.files).find((name) => name.startsWith('audio.'));

@@ -6,7 +6,7 @@ export interface NoteData {
   measure: number;
   velocity: number;
   confidence: number;
-  llmCorrected: boolean;
+  theoryCorrected: boolean;
   articulation?: string | null;
 }
 
@@ -18,7 +18,7 @@ export interface Correction {
   reason: string;
 }
 
-export interface LLMVerificationResult {
+export interface TheoryVerificationResult {
   corrections: Correction[];
   confidence: number;
   error?: string;

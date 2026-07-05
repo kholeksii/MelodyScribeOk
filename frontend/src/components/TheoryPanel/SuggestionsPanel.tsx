@@ -32,7 +32,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
     if (note) {
       const updates: any = {};
       updates[correction.field] = correction.newValue;
-      updateNote(note.id, { ...updates, llmCorrected: true });
+      updateNote(note.id, { ...updates, theoryCorrected: true });
       console.log(`✅ Accepted correction #${index}: ${correction.field} → ${correction.newValue}`);
     }
     setProcessedIndices((prev) => new Set([...prev, index]));
@@ -50,7 +50,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
         if (note) {
           const updates: any = {};
           updates[correction.field] = correction.newValue;
-          updateNote(note.id, { ...updates, llmCorrected: true });
+          updateNote(note.id, { ...updates, theoryCorrected: true });
         }
       }
     });

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useProjectStore } from '../../store/projectStore';
 import { NoteData } from '../../types';
 import { apiClient } from '../../services/apiClient';
-import { SuggestionsPanel } from '../LLMPanel/SuggestionsPanel';
+import { SuggestionsPanel } from '../TheoryPanel/SuggestionsPanel';
 
 export const NoteToolbar: React.FC = () => {
   const selectedNoteId = useProjectStore((state) => state.selectedNoteId);
@@ -90,7 +90,7 @@ export const NoteToolbar: React.FC = () => {
       measure: selectedNote.measure,
       velocity: 0,
       confidence: 1,
-      llmCorrected: false,
+      theoryCorrected: false,
     };
     insertNote(selectedNoteId, restNote);
   };

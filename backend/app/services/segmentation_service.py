@@ -126,7 +126,7 @@ class SegmentationService:
                     measure=int(note.get("measure", 1)),
                     velocity=int(note.get("velocity", 80)),
                     confidence=float(note.get("confidence", 0.0)),
-                    llm_corrected=False,
+                    theory_corrected=False,
                     articulation=note.get("articulation"),
                 )
                 note_data.append(note_obj)
