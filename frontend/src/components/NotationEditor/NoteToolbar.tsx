@@ -104,6 +104,7 @@ export const NoteToolbar: React.FC = () => {
 
     setIsVerifying(true);
     try {
+      // request() unwraps the {success, data, error} envelope and throws ApiError on failure
       const result = await apiClient.verifyNotes(
         notes,
         metadata.instrument,
@@ -113,18 +114,14 @@ export const NoteToolbar: React.FC = () => {
 
       console.log('Verification result:', result);
 
-      if (result.success && result.data) {
-        const corrections = result.data.corrections || [];
-        const confidence = result.data.confidence || 0;
+      const corrections = result.corrections || [];
+      const confidence = result.confidence || 0;
 
-        setCorrections(corrections);
-        setVerificationConfidence(confidence);
-        setShowSuggestions(true);
+      setCorrections(corrections);
+      setVerificationConfidence(confidence);
+      setShowSuggestions(true);
 
-        console.log(`🤖 Verification complete: ${corrections.length} corrections, confidence: ${(confidence * 100).toFixed(0)}%`);
-      } else {
-        console.error('Verification failed:', result.data?.error);
-      }
+      console.log(`🎼 Verification complete: ${corrections.length} corrections, confidence: ${(confidence * 100).toFixed(0)}%`);
     } catch (error) {
       console.error('Verification error:', error);
     } finally {

@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import Response
 
+from ...models.api import ApiResponse, ok
 from ...models.note import NoteData
 from ...models.project import Project
 from ...services.pdf_service import PDFService
@@ -31,7 +32,7 @@ async def export_musicxml(project: Project):
     )
 
 
-@router.post("/api/import/musicxml")
+@router.post("/api/import/musicxml", response_model=ApiResponse[dict])
 async def import_musicxml(file: UploadFile):
     """Import a MusicXML file and return notes in internal format."""
     fname = (file.filename or "").lower()
@@ -108,17 +109,14 @@ async def import_musicxml(file: UploadFile):
             break  # first part only
 
         logger.info(f"MusicXML import: {len(notes)} notes from '{title}'")
-        return {
-            "success": True,
-            "data": {
-                "title": title,
-                "instrument": "piano",
-                "tempo": bpm,
-                "time_signature": time_sig,
-                "key": key_str,
-                "notes": [n.model_dump() for n in notes],
-            },
-        }
+        return ok({
+            "title": title,
+            "instrument": "piano",
+            "tempo": bpm,
+            "time_signature": time_sig,
+            "key": key_str,
+            "notes": [n.model_dump() for n in notes],
+        })
 
     except HTTPException:
         raise

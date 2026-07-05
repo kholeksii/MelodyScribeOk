@@ -4,20 +4,18 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ...config import settings
+from ...models.api import ApiResponse, ok
 from ...services.audio_service import AudioService
 
 router = APIRouter(prefix="/api")
 audio_service = AudioService()
 
-@router.post("/upload")
+@router.post("/upload", response_model=ApiResponse[dict])
 async def upload_audio(file: UploadFile):
-    try:
-        audio_info = await audio_service.upload_file(file)
-        return {"success": True, "data": audio_info}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+    # ValueError (bad extension, missing filename) and unexpected errors are
+    # mapped to the error envelope by the handlers in main.py
+    audio_info = await audio_service.upload_file(file)
+    return ok(audio_info)
 
 
 @router.get("/audio/{file_id}")

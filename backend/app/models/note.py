@@ -17,10 +17,6 @@ class NoteData(BaseModel):
     )
     articulation: str | None = None  # "staccato" | "legato" | None
 
-class TranscriptionResult(BaseModel):
-    success: bool
-    data: "TranscriptionData"
-
 class TranscriptionData(BaseModel):
     notes: list[NoteData]
     tempo: int
