@@ -38,7 +38,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # npm >= 11 required: the lock file is written by npm 11 (Node 26 locally),
+          # which omits "optional": true on platform-specific entries; npm 10 then
+          # tries to install them on the wrong OS and fails with EBADPLATFORM
+          node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
