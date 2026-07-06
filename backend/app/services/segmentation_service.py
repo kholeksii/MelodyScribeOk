@@ -1,5 +1,6 @@
 import logging
 
+from ..core.audio_preprocess import preprocess
 from ..core.key_detector import KeyDetector
 from ..core.onset_detector import OnsetDetector
 from ..core.pitch_detector import PitchDetector
@@ -94,6 +95,12 @@ class SegmentationService:
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
+            # Onset/pitch detection runs on pre-filtered audio; key detection
+            # keeps the raw signal — filtering skews the chroma balance
+            raw_audio = audio
+            logger.info("Pre-filtering audio (bandpass + noise gate)...")
+            audio = preprocess(audio, sr, instrument)
+
             logger.info("Detecting onsets...")
             onsets = self.onset_detector.detect(audio, sr, instrument=instrument)
             logger.info(f"Detected {len(onsets)} onsets")
@@ -133,11 +140,11 @@ class SegmentationService:
                 if sum(1 for p in pitches_seq if p != "rest") >= 8:
                     logger.info("Detecting key from segmented notes + chroma...")
                     detected_key = self.key_detector.detect_combined(
-                        audio, sr, pitches_seq, durations_seq
+                        raw_audio, sr, pitches_seq, durations_seq
                     )
                 else:
                     logger.info("Detecting key from chroma (short take)...")
-                    detected_key = self.key_detector.detect(audio, sr)
+                    detected_key = self.key_detector.detect(raw_audio, sr)
                 logger.info(f"Detected key: {detected_key}")
         except Exception as exc:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)

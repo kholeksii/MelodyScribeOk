@@ -15,7 +15,8 @@ dependencies = [
     "librosa==0.10.2",
     "numpy==1.26.4",
     "music21==9.1.0",
-    "pydub==0.25.1"
+    "pydub==0.25.1",
+    "scipy>=1.11"
 ]
 requires-python = ">=3.11"
 readme = "README.md"
