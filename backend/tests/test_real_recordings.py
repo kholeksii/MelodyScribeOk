@@ -113,14 +113,9 @@ def test_cross_instrument_pitch_agreement(transcriptions: dict) -> None:
     assert ratio >= 0.7, f"agreement {ratio:.2f}: piano={piano} violin={violin}"
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="KeyDetector uses linear np.correlate instead of comparing the 12 circular"
-    " profile rotations, so the root is offset (reports B major for this G-major"
-    " piece); fixed in U30 — remove this marker there",
-)
 @pytest.mark.parametrize("instrument", ["piano", "violin"])
 def test_key_detected_as_g_major(
     transcriptions: dict, ground_truth: dict, instrument: str
 ) -> None:
+    """Fixed in U30: circular Krumhansl rotation + notes/chroma score averaging."""
     assert transcriptions[instrument].key == ground_truth["key"]
