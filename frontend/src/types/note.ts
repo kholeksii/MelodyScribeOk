@@ -8,6 +8,9 @@ export interface NoteData {
   confidence: number;
   theoryCorrected: boolean;
   articulation?: string | null;
+  tuplet?: 'triplet' | null;
+  tieStart?: boolean;
+  tieEnd?: boolean;
 }
 
 export interface Correction {

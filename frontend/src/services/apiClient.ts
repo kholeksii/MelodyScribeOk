@@ -14,6 +14,9 @@ interface BackendNote {
   theory_corrected?: boolean;
   llm_corrected?: boolean; // pre-rename files
   articulation?: string | null;
+  tuplet?: 'triplet' | null;
+  tie_start?: boolean;
+  tie_end?: boolean;
 }
 
 interface Envelope<T> {
@@ -75,6 +78,9 @@ function toNoteData(note: BackendNote): NoteData {
     confidence: note.confidence ?? 1.0,
     theoryCorrected: note.theory_corrected ?? note.llm_corrected ?? false,
     articulation: note.articulation ?? null,
+    tuplet: note.tuplet ?? null,
+    tieStart: note.tie_start ?? false,
+    tieEnd: note.tie_end ?? false,
   };
 }
 
@@ -88,6 +94,9 @@ function toBackendNote(note: NoteData): BackendNote {
     velocity: note.velocity,
     confidence: note.confidence,
     theory_corrected: note.theoryCorrected,
+    tuplet: note.tuplet ?? null,
+    tie_start: note.tieStart ?? false,
+    tie_end: note.tieEnd ?? false,
   };
 }
 

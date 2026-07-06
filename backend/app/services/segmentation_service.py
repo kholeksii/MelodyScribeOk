@@ -1,8 +1,10 @@
 import logging
 
+from ..core.audio_preprocess import preprocess
 from ..core.key_detector import KeyDetector
 from ..core.onset_detector import OnsetDetector
 from ..core.pitch_detector import PitchDetector
+from ..core.pitch_postprocess import fold_octave_outliers
 from ..core.quantizer import Quantizer
 from ..core.tempo_detector import TempoDetector
 from ..errors import FfmpegMissingError
@@ -19,6 +21,23 @@ try:
     import numpy as np
 except ImportError:
     np = None  # type: ignore
+
+
+MIN_NOTE_CONFIDENCE = 0.3  # phantom-note filter (audit found notes at 0.10)
+REST_MIN_BEATS = 0.5  # a silent tail shorter than this stays part of the note
+
+
+def _sounding_duration_sec(segment, sr: int, floor_amp: float) -> float:
+    """How long the segment actually sounds before falling to the noise floor."""
+    import numpy as np
+
+    window = max(int(0.02 * sr), 1)
+    last_sounding = 0
+    for k in range(len(segment) // window):
+        chunk = segment[k * window : (k + 1) * window]
+        if float(np.sqrt(np.mean(chunk**2))) >= floor_amp:
+            last_sounding = k + 1
+    return last_sounding * window / sr
 
 
 def _rms_to_velocity(rms: float, rms_max: float) -> int:
@@ -76,8 +95,14 @@ class SegmentationService:
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
+            # Onset/pitch detection runs on pre-filtered audio; key detection
+            # keeps the raw signal — filtering skews the chroma balance
+            raw_audio = audio
+            logger.info("Pre-filtering audio (bandpass + noise gate)...")
+            audio = preprocess(audio, sr, instrument)
+
             logger.info("Detecting onsets...")
-            onsets = self.onset_detector.detect(audio, sr)
+            onsets = self.onset_detector.detect(audio, sr, instrument=instrument)
             logger.info(f"Detected {len(onsets)} onsets")
 
             if bpm is not None:
@@ -115,11 +140,11 @@ class SegmentationService:
                 if sum(1 for p in pitches_seq if p != "rest") >= 8:
                     logger.info("Detecting key from segmented notes + chroma...")
                     detected_key = self.key_detector.detect_combined(
-                        audio, sr, pitches_seq, durations_seq
+                        raw_audio, sr, pitches_seq, durations_seq
                     )
                 else:
                     logger.info("Detecting key from chroma (short take)...")
-                    detected_key = self.key_detector.detect(audio, sr)
+                    detected_key = self.key_detector.detect(raw_audio, sr)
                 logger.info(f"Detected key: {detected_key}")
         except Exception as exc:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)
@@ -139,6 +164,9 @@ class SegmentationService:
                     confidence=float(note.get("confidence", 0.0)),
                     theory_corrected=False,
                     articulation=note.get("articulation"),
+                    tuplet=note.get("tuplet"),
+                    tie_start=bool(note.get("tie_start", False)),
+                    tie_end=bool(note.get("tie_end", False)),
                 )
                 note_data.append(note_obj)
             except Exception as e:
@@ -189,6 +217,10 @@ class SegmentationService:
             _np.array([p["time_ms"] / 1000.0 for p in pitches]) if pitches else _np.array([])
         )
 
+        beat_sec = 60.0 / tempo
+        peak = float(_np.max(_np.abs(audio))) if audio is not None and len(audio) else 0.0
+        floor_amp = peak * (10.0 ** (-40.0 / 20.0)) if peak > 0 else 0.0
+
         for i, onset in enumerate(onsets):
             next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
 
@@ -227,6 +259,25 @@ class SegmentationService:
             velocity = _rms_to_velocity(rms_values[i], rms_max)
             articulation = _detect_articulation(duration_sec, duration_sec)
 
+            # Split off a rest when the tail of the segment is silent
+            rest = None
+            if audio is not None and floor_amp > 0:
+                segment = audio[int(onset * sr) : int(next_onset * sr)]
+                sounding_sec = _sounding_duration_sec(segment, sr, floor_amp)
+                silent_tail = duration_sec - sounding_sec
+                if sounding_sec > 0 and silent_tail >= REST_MIN_BEATS * beat_sec:
+                    duration_sec = sounding_sec
+                    rest_start = start_beat + sounding_sec * tempo / 60.0
+                    rest = {
+                        "note": "rest",
+                        "start_beat": rest_start,
+                        "measure": int(rest_start // beats_per_measure) + 1,
+                        "duration_sec": silent_tail,
+                        "confidence": 1.0,
+                        "velocity": 0,
+                        "articulation": None,
+                    }
+
             logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={confidence:.2f})")
             notes.append({
                 "note": median_note,
@@ -237,8 +288,28 @@ class SegmentationService:
                 "velocity": velocity,
                 "articulation": articulation,
             })
+            if rest is not None:
+                notes.append(rest)
+
+        notes = self._filter_phantom_notes(notes, tempo)
+        notes = fold_octave_outliers(notes)
 
         logger.info(
             f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitches -> {len(notes)} notes"
         )
         return notes
+
+    @staticmethod
+    def _filter_phantom_notes(notes: list[dict], tempo: int) -> list[dict]:
+        """Drop notes below the confidence floor (the audit found phantoms at
+        0.10); a dropped note spanning a beat or more becomes a rest so the
+        rhythm grid keeps its shape."""
+        beat_sec = 60.0 / tempo
+        filtered: list[dict] = []
+        for note in notes:
+            if note["note"] == "rest" or note["confidence"] >= MIN_NOTE_CONFIDENCE:
+                filtered.append(note)
+                continue
+            if note["duration_sec"] >= beat_sec:
+                filtered.append({**note, "note": "rest", "velocity": 0, "confidence": 1.0})
+        return filtered

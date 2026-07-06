@@ -1,6 +1,7 @@
 import logging
 
-from music21 import key, metadata, meter, note, stream, tempo
+from music21 import duration as m21duration
+from music21 import key, metadata, meter, note, stream, tempo, tie
 
 from ..models.note import NoteData
 from ..models.project import Project
@@ -9,8 +10,11 @@ logger = logging.getLogger(__name__)
 
 DURATION_MAP = {
     "whole": 4.0,
+    "half.": 3.0,
     "half": 2.0,
+    "quarter.": 1.5,
     "quarter": 1.0,
+    "eighth.": 0.75,
     "eighth": 0.5,
     "sixteenth": 0.25,
 }
@@ -79,6 +83,15 @@ class PDFService:
 
         n = note.Note(nd.pitch, quarterLength=ql)
         n.volume.velocity = nd.velocity
+
+        if nd.tuplet == "triplet":
+            n.duration.appendTuplet(m21duration.Tuplet(3, 2))
+        if nd.tie_start and nd.tie_end:
+            n.tie = tie.Tie("continue")
+        elif nd.tie_start:
+            n.tie = tie.Tie("start")
+        elif nd.tie_end:
+            n.tie = tie.Tie("stop")
         return n
 
     def _parse_key(self, key_str: str):

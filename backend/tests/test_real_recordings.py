@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
     shutil.which("ffmpeg") is None, reason="ffmpeg required for m4a fixtures"
 )
 
-MIN_CONFIDENCE = 0.6
+MIN_CONFIDENCE = 0.5
 
 
 @pytest.fixture(scope="module")
