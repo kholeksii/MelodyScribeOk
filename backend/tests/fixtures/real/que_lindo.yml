@@ -1,0 +1,31 @@
+# Ground truth for the Que Lindo Atardecer regression fixtures.
+#
+# Piece: "¡Qué lindo atardecer!" (Ricardo Lafuente, arr. Manuel M. Guirao)
+# Two recordings of the same part, played from the printed score:
+#   que_lindo_piano.m4a  — piano
+#   que_lindo_violin.m4a — violin
+#
+# NOTE: full note-by-note ground truth (durations, complete pitch list) must
+# be entered by a musician reading the printed score before strict per-note
+# assertions are added; until then only contour-level assertions are used.
+
+piece: "Que lindo atardecer"
+key: "G major" # one sharp in the printed score
+final_note: "G" # the phrase ends on the tonic
+
+# Consensus opening of the vocal phrase, confirmed by BOTH independent
+# recordings against the printed part (lyrics: "(Que) lin-do a-tar-de-cer se ad-mi-ra"):
+# pickup D4, then repeated B4s descending through G4 and E4 back to D4.
+opening_pitches: [D4, B4, B4, B4, B4, G4, E4]
+
+# Contour actually asserted by tests: consecutive repeated pitches merged,
+# low-confidence notes dropped. Both recordings contain this contiguous run.
+assertion_phrase: [B4, G4, E4, D4]
+
+# Both takes were played at a similar, unmeasured tempo; tests only assert
+# cross-recording consistency, not an absolute BPM.
+recordings:
+  - file: que_lindo_piano.m4a
+    instrument: piano
+  - file: que_lindo_violin.m4a
+    instrument: violin
