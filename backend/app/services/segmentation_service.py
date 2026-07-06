@@ -76,12 +76,16 @@ class SegmentationService:
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
+            logger.info("Detecting onsets...")
+            onsets = self.onset_detector.detect(audio, sr)
+            logger.info(f"Detected {len(onsets)} onsets")
+
             if bpm is not None:
                 logger.info(f"Using user-supplied BPM: {bpm}")
                 tempo = bpm
             else:
-                logger.info("Detecting tempo...")
-                tempo = self.tempo_detector.detect(audio, sr)
+                logger.info("Detecting tempo from inter-onset intervals...")
+                tempo = self.tempo_detector.detect(audio, sr, onsets=onsets)
             logger.info(f"Detected tempo: {tempo} (type={type(tempo).__name__})")
 
             if key is not None:
@@ -91,10 +95,6 @@ class SegmentationService:
                 logger.info("Detecting key...")
                 detected_key = self.key_detector.detect(audio, sr)
                 logger.info(f"Detected key: {detected_key} (type={type(detected_key).__name__})")
-
-            logger.info("Detecting onsets...")
-            onsets = self.onset_detector.detect(audio, sr)
-            logger.info(f"Detected {len(onsets)} onsets")
 
             logger.info("Detecting pitch...")
             pitches = self.pitch_detector.detect(audio, sr, instrument)
