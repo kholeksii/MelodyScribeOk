@@ -5,24 +5,24 @@ Run from backend/:  python -m tests.benchmark_accuracy
 Not collected by pytest (no test_ prefix). Compares SegmentationService
 output against synthesized ground truth plus the two real recordings.
 
-Baseline (2026-07-06, after U9+U30, macOS):
+Baseline (2026-07-06, after U11 onset rework, macOS):
 | case                    | pitch acc | octave-tol | notes Δ | bpm (true) |
 |-------------------------|-----------|------------|---------|------------|
-| do_mi_re_do_120         | 1.00      | 1.00       | +0      | 123 (120)  |
-| scale_up_90             | 1.00      | 1.00       | +0      | 90 (90)    |
+| do_mi_re_do_120         | 1.00      | 1.00       | +0      | 120 (120)  |
+| scale_up_90             | 1.00      | 1.00       | +0      | 89 (90)    |
 | scale_eighths_140       | 1.00      | 1.00       | +0      | 136 (140)  |
 | dotted_120              | 1.00      | 1.00       | +0      | 120 (120)  |
-| habanera_120            | 1.00      | 1.00       | +0      | 120 (120)  |
-| with_rests_100          | 1.00      | 1.00       | +0      | 91 (100)   |
-| wide_leaps_violin_120   | 0.83      | 0.83       | +0      | 120 (120)  |
-| guitar_low_110          | 0.14      | 0.14       | +6      | 110 (110)  |
+| habanera_120            | 1.00      | 1.00       | +0      | 118 (120)  |
+| with_rests_100          | 1.00      | 1.00       | +0      | 100 (100)  |
+| wide_leaps_violin_120   | 1.00      | 1.00       | +0      | 120 (120)  |
+| guitar_low_110          | 1.00      | 1.00       | +0      | 110 (110)  |
 | long_notes_80           | 1.00      | 1.00       | +0      | 80 (80)    |
-Real: piano key=G major bpm=132 notes=35; violin key=G major bpm=107
-notes=49; cross-agreement=0.87
+Real: piano key=G major bpm=132 notes=34; violin key=G major bpm=107
+notes=39; cross-agreement=0.95
 
-Known weak spots the baseline exposes: low-register guitar collapses into
-octave-error fragments (0.14 — target of U12), rests shift the IOI tempo
-grid (91 vs 100), one wide leap misses.
+History: before U11 guitar_low was 0.14 (+6 phantom fragments), wide_leaps
+0.83, with_rests tempo 91, cross-agreement 0.87 with 49 violin notes —
+the onset noise floor + attack-preferring merge removed all of it.
 """
 import shutil
 import tempfile

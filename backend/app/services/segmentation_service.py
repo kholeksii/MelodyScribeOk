@@ -21,6 +21,23 @@ except ImportError:
     np = None  # type: ignore
 
 
+MIN_NOTE_CONFIDENCE = 0.3  # phantom-note filter (audit found notes at 0.10)
+REST_MIN_BEATS = 0.5  # a silent tail shorter than this stays part of the note
+
+
+def _sounding_duration_sec(segment, sr: int, floor_amp: float) -> float:
+    """How long the segment actually sounds before falling to the noise floor."""
+    import numpy as np
+
+    window = max(int(0.02 * sr), 1)
+    last_sounding = 0
+    for k in range(len(segment) // window):
+        chunk = segment[k * window : (k + 1) * window]
+        if float(np.sqrt(np.mean(chunk**2))) >= floor_amp:
+            last_sounding = k + 1
+    return last_sounding * window / sr
+
+
 def _rms_to_velocity(rms: float, rms_max: float) -> int:
     """Map RMS amplitude to MIDI velocity 20–120."""
     if rms_max <= 0:
@@ -77,7 +94,7 @@ class SegmentationService:
 
         try:
             logger.info("Detecting onsets...")
-            onsets = self.onset_detector.detect(audio, sr)
+            onsets = self.onset_detector.detect(audio, sr, instrument=instrument)
             logger.info(f"Detected {len(onsets)} onsets")
 
             if bpm is not None:
@@ -189,6 +206,10 @@ class SegmentationService:
             _np.array([p["time_ms"] / 1000.0 for p in pitches]) if pitches else _np.array([])
         )
 
+        beat_sec = 60.0 / tempo
+        peak = float(_np.max(_np.abs(audio))) if audio is not None and len(audio) else 0.0
+        floor_amp = peak * (10.0 ** (-40.0 / 20.0)) if peak > 0 else 0.0
+
         for i, onset in enumerate(onsets):
             next_onset = onsets[i + 1] if i + 1 < len(onsets) else onset + 0.5
 
@@ -227,6 +248,25 @@ class SegmentationService:
             velocity = _rms_to_velocity(rms_values[i], rms_max)
             articulation = _detect_articulation(duration_sec, duration_sec)
 
+            # Split off a rest when the tail of the segment is silent
+            rest = None
+            if audio is not None and floor_amp > 0:
+                segment = audio[int(onset * sr) : int(next_onset * sr)]
+                sounding_sec = _sounding_duration_sec(segment, sr, floor_amp)
+                silent_tail = duration_sec - sounding_sec
+                if sounding_sec > 0 and silent_tail >= REST_MIN_BEATS * beat_sec:
+                    duration_sec = sounding_sec
+                    rest_start = start_beat + sounding_sec * tempo / 60.0
+                    rest = {
+                        "note": "rest",
+                        "start_beat": rest_start,
+                        "measure": int(rest_start // beats_per_measure) + 1,
+                        "duration_sec": silent_tail,
+                        "confidence": 1.0,
+                        "velocity": 0,
+                        "articulation": None,
+                    }
+
             logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={confidence:.2f})")
             notes.append({
                 "note": median_note,
@@ -237,8 +277,27 @@ class SegmentationService:
                 "velocity": velocity,
                 "articulation": articulation,
             })
+            if rest is not None:
+                notes.append(rest)
+
+        notes = self._filter_phantom_notes(notes, tempo)
 
         logger.info(
             f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitches -> {len(notes)} notes"
         )
         return notes
+
+    @staticmethod
+    def _filter_phantom_notes(notes: list[dict], tempo: int) -> list[dict]:
+        """Drop notes below the confidence floor (the audit found phantoms at
+        0.10); a dropped note spanning a beat or more becomes a rest so the
+        rhythm grid keeps its shape."""
+        beat_sec = 60.0 / tempo
+        filtered: list[dict] = []
+        for note in notes:
+            if note["note"] == "rest" or note["confidence"] >= MIN_NOTE_CONFIDENCE:
+                filtered.append(note)
+                continue
+            if note["duration_sec"] >= beat_sec:
+                filtered.append({**note, "note": "rest", "velocity": 0, "confidence": 1.0})
+        return filtered
