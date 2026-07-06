@@ -102,13 +102,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper">
       <Tour />
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-paper-dark shadow-sm border-b border-ink-soft/15">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">MelodyScribe</h1>
+            <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
             <Toolbar />
           </div>
         </div>
@@ -147,15 +147,15 @@ function App() {
                 <button
                   onClick={handleTranscribe}
                   disabled={isTranscribing}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary px-6 py-3 text-base"
                 >
                   {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
                 </button>
               )}
             </div>
             {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="mt-6 p-4 bg-danger/10 border border-danger/30 rounded-md">
+                <p className="text-sm text-danger">{error}</p>
               </div>
             )}
           </div>
@@ -166,7 +166,7 @@ function App() {
                 onClick={undo}
                 disabled={!canUndo()}
                 title="Undo (Ctrl+Z)"
-                className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-ghost"
               >
                 ↩ Undo
               </button>
@@ -174,7 +174,7 @@ function App() {
                 onClick={redo}
                 disabled={!canRedo()}
                 title="Redo (Ctrl+Shift+Z)"
-                className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-ghost"
               >
                 ↪ Redo
               </button>
@@ -195,7 +195,7 @@ function App() {
                   setMetadata(null);
                   setAudioFileId(null);
                 }}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="btn-secondary"
               >
                 Start New Transcription
               </button>
@@ -206,9 +206,9 @@ function App() {
 
       {/* Footer with metadata */}
       {metadata && (
-        <footer className="bg-white border-t mt-8">
+        <footer className="bg-paper-dark border-t border-ink-soft/15 mt-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-center space-x-6 text-sm text-gray-600">
+            <div className="flex justify-center space-x-6 text-sm text-ink-soft">
               <span>Instrument: {metadata.instrument}</span>
               <span>Tempo: {metadata.tempo} BPM</span>
               <span>Key: {metadata.key}</span>
