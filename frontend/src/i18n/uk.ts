@@ -161,6 +161,13 @@ export const uk = {
   errNetwork: 'Немає з’єднання з сервером. Чи запущений бекенд?',
   errUnknown: 'Невідома помилка',
 
+  // Відновлення сесії (U19)
+  recoveryPrompt: 'Відновити останню сесію?',
+  recoveryDetail: '{title} — нот: {notes}, збережено {when}',
+  restore: 'Відновити',
+  discard: 'Відхилити',
+  recoveryAudioHint: 'Аудіо не зберігається в автозбереженні — завантажте файл ще раз, щоб бачити хвилю.',
+
   // Гарячі клавіші (U18)
   shortcutsTitle: 'Гарячі клавіші',
   shortcutsHintTitle: 'Гарячі клавіші (?)',
