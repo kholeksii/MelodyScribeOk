@@ -43,17 +43,17 @@ export const Toolbar: React.FC = () => {
       <button
         onClick={handleSave}
         disabled={!metadata || !notes.length}
-        className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="btn-secondary"
         title="Save project as .melody file"
       >
-        Save Project
+        Save
       </button>
       <button
         onClick={() => openFileRef.current?.click()}
-        className="px-3 py-1.5 text-sm font-medium rounded border border-gray-300 bg-white hover:bg-gray-50"
+        className="btn-secondary"
         title="Open a .melody project file"
       >
-        Open Project
+        Open
       </button>
       <input
         ref={openFileRef}

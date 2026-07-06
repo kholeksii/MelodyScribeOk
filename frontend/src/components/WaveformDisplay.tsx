@@ -6,7 +6,7 @@ const BASE_URL = 'http://localhost:8000/api';
 const WAVEFORM_COLOR = '#94a3b8';    // slate-400
 const ONSET_COLOR = '#3b82f6';       // blue-500
 const PLAYHEAD_COLOR = '#16a34a';    // green-600
-const CANVAS_HEIGHT = 80;
+const CANVAS_HEIGHT = 96;
 
 interface WaveformDisplayProps {
   notes: NoteData[];
@@ -124,15 +124,14 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({ notes, tempo }
 
   return (
     <div className="w-full">
-      <h3 className="text-sm font-semibold text-gray-600 mb-1">Waveform</h3>
-      <div className="border border-gray-200 rounded bg-gray-50">
+      <div className="border border-ink-soft/15 rounded bg-white">
         <canvas
           ref={canvasRef}
           style={{ width: '100%', height: CANVAS_HEIGHT }}
           className="block rounded"
         />
       </div>
-      <div className="mt-1 flex items-center gap-4 text-xs text-gray-500">
+      <div className="mt-1 flex items-center gap-4 text-xs text-ink-soft">
         <span className="flex items-center gap-1">
           <span className="inline-block w-4 border-t border-blue-500" />
           Note onset

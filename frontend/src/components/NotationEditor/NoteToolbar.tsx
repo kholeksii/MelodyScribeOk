@@ -151,20 +151,20 @@ export const NoteToolbar: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 mt-4">
+    <div className="rounded-lg border border-ink-soft/15 bg-white p-4 shadow-md">
       {/* Octave section — always visible */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium text-gray-700">Octave:</span>
+        <span className="text-xs font-medium text-ink-soft">Octave:</span>
         <button
           onClick={() => shiftAllOctaves(1)}
-          className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600 text-sm"
+          className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
           title="Shift all notes up one octave"
         >
           ↑ All up
         </button>
         <button
           onClick={() => shiftAllOctaves(-1)}
-          className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600 text-sm"
+          className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
           title="Shift all notes down one octave"
         >
           ↓ All down
@@ -174,7 +174,7 @@ export const NoteToolbar: React.FC = () => {
       {selectedNote && (
         <>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-semibold text-blue-900">
+            <span className="text-sm font-semibold text-ink">
               Note: {selectedNote.pitch} ({selectedNote.duration})
             </span>
           </div>
@@ -182,20 +182,20 @@ export const NoteToolbar: React.FC = () => {
           {/* Pitch Controls */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-700">Pitch:</span>
+              <span className="text-xs font-medium text-ink-soft">Pitch:</span>
               <button
                 onClick={handlePitchDown}
-                className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
+                className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
                 title="Pitch down (semitone)"
               >
                 ▼
               </button>
-              <span className="text-sm font-semibold text-gray-700 w-12 text-center">
+              <span className="text-sm font-semibold text-ink w-12 text-center">
                 {selectedNote.pitch}
               </span>
               <button
                 onClick={handlePitchUp}
-                className="px-3 py-1.5 bg-white border border-blue-300 rounded hover:bg-blue-50 active:bg-blue-100 transition font-semibold text-blue-600"
+                className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
                 title="Pitch up (semitone)"
               >
                 ▲
@@ -205,7 +205,7 @@ export const NoteToolbar: React.FC = () => {
 
           {/* Duration Controls */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs font-medium text-gray-700">Duration:</span>
+            <span className="text-xs font-medium text-ink-soft">Duration:</span>
             <div className="flex gap-1.5">
               {durationButtons.map((duration) => (
                 <button
@@ -213,8 +213,8 @@ export const NoteToolbar: React.FC = () => {
                   onClick={() => handleDurationChange(duration)}
                   className={`px-3 py-1.5 rounded font-semibold transition ${
                     selectedNote.duration === duration
-                      ? 'bg-blue-600 text-white border border-blue-700'
-                      : 'bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 active:bg-blue-100'
+                      ? 'bg-accent text-white border border-accent'
+                      : 'bg-white text-accent border border-ink-soft/30 hover:bg-paper-dark'
                   }`}
                   title={`Set duration to ${duration}`}
                 >
@@ -228,14 +228,14 @@ export const NoteToolbar: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={handleAddRest}
-              className="px-4 py-1.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded font-medium text-sm transition"
+              className="px-4 py-1.5 bg-valid hover:opacity-90 text-white rounded font-medium text-sm transition"
               title="Add rest after this note"
             >
               + Rest
             </button>
             <button
               onClick={handleDeleteNote}
-              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded font-medium text-sm transition"
+              className="px-4 py-1.5 bg-danger hover:opacity-90 text-white rounded font-medium text-sm transition"
               title="Delete this note"
             >
               Delete
@@ -245,8 +245,8 @@ export const NoteToolbar: React.FC = () => {
               disabled={isVerifying || notes.length === 0}
               className={`ml-auto px-4 py-1.5 rounded font-medium text-sm transition flex items-center gap-2 ${
                 isVerifying || notes.length === 0
-                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white'
+                  ? 'bg-ink-soft/20 text-ink-soft cursor-not-allowed'
+                  : 'bg-accent hover:bg-accent-hover text-white'
               }`}
               title={notes.length === 0 ? 'No notes to verify' : 'Verify transcription with AI'}
             >
@@ -262,7 +262,7 @@ export const NoteToolbar: React.FC = () => {
           </div>
 
           {/* Info */}
-          <div className="mt-3 text-xs text-blue-700 bg-white bg-opacity-50 rounded px-2 py-1">
+          <div className="mt-3 text-xs text-ink-soft bg-paper rounded px-2 py-1">
             <p>
               Confidence: {(selectedNote.confidence * 100).toFixed(0)}% |
               Velocity: {selectedNote.velocity} |
