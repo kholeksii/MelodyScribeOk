@@ -40,6 +40,33 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
     stop();
   };
 
+  // Space = play/stop (U18); guarded against inputs, buttons and page scroll
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.tagName === 'BUTTON' ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      if (isPlaying) {
+        stop();
+      } else {
+        handlePlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlePlay closes over notes/bpm; rebind on playback state
+  }, [isPlaying, hasNotes, currentBpm, notes]);
+
   const handleBpmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     const parsed = parseInt(raw, 10);

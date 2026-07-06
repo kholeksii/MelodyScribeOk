@@ -6,12 +6,15 @@ import { PlaybackControls } from './Playback/PlaybackControls';
 import { ExportButton } from './ExportButton';
 import { WaveformDisplay } from './WaveformDisplay';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ShortcutHelp } from './ShortcutHelp';
 import { useProjectStore } from '../store/projectStore';
+import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
 import { useT, instrumentLabel } from '../i18n';
 
 export const EditorScreen: React.FC = () => {
   const [showWaveform, setShowWaveform] = useState(true);
   const t = useT();
+  const { helpVisible, setHelpVisible } = useKeyboardEditing();
   const {
     notes,
     metadata,
@@ -53,6 +56,7 @@ export const EditorScreen: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">
+      <ShortcutHelp visible={helpVisible} onClose={() => setHelpVisible(false)} />
       {/* Top bar: title, metadata chips, project actions */}
       <header className="sticky top-0 z-30 border-b border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
@@ -85,6 +89,13 @@ export const EditorScreen: React.FC = () => {
             <ExportButton />
             <button onClick={handleNewTranscription} title={t('newProjectTitle')} className="btn-ghost">
               {t('newProject')}
+            </button>
+            <button
+              onClick={() => setHelpVisible(true)}
+              title={t('shortcutsHintTitle')}
+              className="btn-ghost"
+            >
+              ?
             </button>
             <LanguageSwitcher />
           </div>

@@ -4,6 +4,7 @@ import { NoteData } from '../../types';
 import { apiClient } from '../../services/apiClient';
 import { SuggestionsPanel } from '../TheoryPanel/SuggestionsPanel';
 import { useT, durationLabel } from '../../i18n';
+import { transposeSemitones, durationToBeats } from '../../utils/noteUtils';
 
 export const NoteToolbar: React.FC = () => {
   const t = useT();
@@ -31,45 +32,14 @@ export const NoteToolbar: React.FC = () => {
     return null;
   }
 
-  // Pitch notes array
-  const pitchNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-  // Parse pitch (e.g., "G3" -> { note: "G", octave: 3 })
-  const parsePitch = (pitch: string) => {
-    const note = pitch.slice(0, -1);
-    const octave = parseInt(pitch.slice(-1), 10);
-    return { note, octave };
-  };
-
-  // Create pitch (e.g., { note: "G", octave: 3 } -> "G3")
-  const createPitch = (note: string, octave: number) => {
-    // Ensure octave is valid (0-8)
-    const validOctave = Math.max(0, Math.min(8, octave));
-    return `${note}${validOctave}`;
-  };
-
   const handlePitchUp = () => {
     if (!selectedNote || !selectedNoteId) return;
-    const { note, octave } = parsePitch(selectedNote.pitch);
-    const currentIndex = pitchNotes.indexOf(note);
-    if (currentIndex === -1) return;
-    let newIndex = currentIndex + 1;
-    let newOctave = octave;
-    if (newIndex >= pitchNotes.length) { newIndex = 0; newOctave += 1; }
-    const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId, { pitch: newPitch });
+    updateNote(selectedNoteId, { pitch: transposeSemitones(selectedNote.pitch, 1) });
   };
 
   const handlePitchDown = () => {
     if (!selectedNote || !selectedNoteId) return;
-    const { note, octave } = parsePitch(selectedNote.pitch);
-    const currentIndex = pitchNotes.indexOf(note);
-    if (currentIndex === -1) return;
-    let newIndex = currentIndex - 1;
-    let newOctave = octave;
-    if (newIndex < 0) { newIndex = pitchNotes.length - 1; newOctave -= 1; }
-    const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId, { pitch: newPitch });
+    updateNote(selectedNoteId, { pitch: transposeSemitones(selectedNote.pitch, -1) });
   };
 
   const handleDurationChange = (duration: string) => {
@@ -88,7 +58,7 @@ export const NoteToolbar: React.FC = () => {
       id: `rest-${Date.now()}`,
       pitch: 'rest',
       duration: selectedNote.duration,
-      startBeat: selectedNote.startBeat + (durationToBeats(selectedNote.duration) || 0),
+      startBeat: selectedNote.startBeat + durationToBeats(selectedNote.duration),
       measure: selectedNote.measure,
       velocity: 0,
       confidence: 1,
@@ -129,18 +99,6 @@ export const NoteToolbar: React.FC = () => {
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  // Helper to convert duration to beats
-  const durationToBeats = (duration: string): number => {
-    const beatMap: { [key: string]: number } = {
-      whole: 4,
-      half: 2,
-      quarter: 1,
-      eighth: 0.5,
-      sixteenth: 0.25,
-    };
-    return beatMap[duration] || 1;
   };
 
   const durationButtons = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
