@@ -109,11 +109,7 @@ export const ExportButton: React.FC = () => {
       <button
         onClick={handleExportPDF}
         disabled={isExporting || !notes.length}
-        className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm ${
-          isExporting || !notes.length
-            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-            : 'bg-red-600 hover:bg-red-700 text-white'
-        }`}
+        className="btn-primary"
         title="Export notation as PDF"
       >
         {isExporting ? '⟳ Exporting…' : 'Export PDF'}
@@ -122,23 +118,19 @@ export const ExportButton: React.FC = () => {
       <button
         onClick={handleExportMusicXML}
         disabled={isExporting || !notes.length}
-        className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm ${
-          isExporting || !notes.length
-            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
-        }`}
+        className="btn-secondary"
         title="Export to MusicXML (open in MuseScore, Finale, Sibelius)"
       >
-        {isExporting ? '⟳ Exporting…' : 'Export MusicXML'}
+        {isExporting ? '⟳ Exporting…' : 'MusicXML'}
       </button>
 
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={isImporting}
-        className="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 disabled:opacity-50"
+        className="btn-secondary"
         title="Import MusicXML file"
       >
-        {isImporting ? '⟳ Importing…' : 'Import MusicXML'}
+        {isImporting ? '⟳ Importing…' : 'Import'}
       </button>
       <input
         ref={fileInputRef}
@@ -149,7 +141,7 @@ export const ExportButton: React.FC = () => {
       />
 
       {error && (
-        <span className="text-sm text-red-600 font-medium">{error}</span>
+        <span className="text-sm text-danger font-medium">{error}</span>
       )}
     </div>
   );

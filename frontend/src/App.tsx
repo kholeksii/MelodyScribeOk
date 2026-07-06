@@ -1,13 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
 import { Toolbar } from './components/Toolbar/Toolbar';
-import { NotationDisplay } from './components/NotationEditor/NotationDisplay';
-import { NoteToolbar } from './components/NotationEditor/NoteToolbar';
-import { PlaybackControls } from './components/Playback/PlaybackControls';
-import { ExportButton } from './components/ExportButton';
-import { WaveformDisplay } from './components/WaveformDisplay';
+import { EditorScreen } from './components/EditorScreen';
 import { useProjectStore } from './store/projectStore';
 import { useRecentProjectsStore } from './store/recentProjectsStore';
 import { useToast } from './components/Toast';
@@ -35,7 +31,6 @@ function App() {
 
   const {
     notes,
-    metadata,
     audioFileId,
     error,
     setNotes,
@@ -43,27 +38,7 @@ function App() {
     setAudioFileId,
     setLoading,
     setError,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
   } = useProjectStore();
-
-  // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Shift+Z = redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
@@ -101,6 +76,16 @@ function App() {
     }
   };
 
+  // Post-transcription editor takes over the whole window (own top/bottom bars)
+  if (notes.length > 0) {
+    return (
+      <>
+        <Tour />
+        <EditorScreen />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-paper">
       <Tour />
@@ -114,109 +99,51 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Upload screen */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!notes.length ? (
-          <div className="text-center">
-            {recents.length > 0 && (
-              <div className="mb-6 text-left max-w-md mx-auto">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Recent projects</p>
-                <ul className="space-y-1">
-                  {recents.map((r) => (
-                    <li key={r.name + r.savedAt} className="flex justify-between text-sm text-gray-600 border-b border-gray-100 pb-1">
-                      <span className="truncate">{r.name}</span>
-                      <span className="ml-3 text-gray-400 shrink-0">{relativeTime(r.savedAt)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-gray-400 mt-1">Use "Open Project" to reopen a saved file.</p>
-              </div>
-            )}
-            <FileUpload onUploadComplete={handleUploadComplete} />
-            <div className="mt-6 flex flex-col items-center gap-4">
-              <InstrumentSelector value={instrument} onChange={setInstrument} />
-              <TranscribeOptions
-                bpm={optBpm}
-                setBpm={setOptBpm}
-                timeSignature={optTimeSignature}
-                setTimeSignature={setOptTimeSignature}
-                musicalKey={optKey}
-                setMusicalKey={setOptKey}
-              />
-              {audioFileId && (
-                <button
-                  onClick={handleTranscribe}
-                  disabled={isTranscribing}
-                  className="btn-primary px-6 py-3 text-base"
-                >
-                  {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
-                </button>
-              )}
+        <div className="text-center">
+          {recents.length > 0 && (
+            <div className="mb-6 text-left max-w-md mx-auto">
+              <p className="text-sm font-semibold text-ink mb-2">Recent projects</p>
+              <ul className="space-y-1">
+                {recents.map((r) => (
+                  <li key={r.name + r.savedAt} className="flex justify-between text-sm text-ink-soft border-b border-ink-soft/10 pb-1">
+                    <span className="truncate">{r.name}</span>
+                    <span className="ml-3 text-ink-soft/60 shrink-0">{relativeTime(r.savedAt)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-ink-soft/60 mt-1">Use "Open Project" to reopen a saved file.</p>
             </div>
-            {error && (
-              <div className="mt-6 p-4 bg-danger/10 border border-danger/30 rounded-md">
-                <p className="text-sm text-danger">{error}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={undo}
-                disabled={!canUndo()}
-                title="Undo (Ctrl+Z)"
-                className="btn-ghost"
-              >
-                ↩ Undo
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo()}
-                title="Redo (Ctrl+Shift+Z)"
-                className="btn-ghost"
-              >
-                ↪ Redo
-              </button>
-            </div>
-            <NotationDisplay
-              notes={notes}
-              timeSignature={metadata?.timeSignature || '4/4'}
-              keySignature={metadata?.key || 'C'}
+          )}
+          <FileUpload onUploadComplete={handleUploadComplete} />
+          <div className="mt-6 flex flex-col items-center gap-4">
+            <InstrumentSelector value={instrument} onChange={setInstrument} />
+            <TranscribeOptions
+              bpm={optBpm}
+              setBpm={setOptBpm}
+              timeSignature={optTimeSignature}
+              setTimeSignature={setOptTimeSignature}
+              musicalKey={optKey}
+              setMusicalKey={setOptKey}
             />
-            <WaveformDisplay notes={notes} tempo={metadata?.tempo || 120} />
-            <NoteToolbar />
-            <PlaybackControls bpm={metadata?.tempo || 120} />
-            <div className="flex justify-center gap-4">
-              <ExportButton />
+            {audioFileId && (
               <button
-                onClick={() => {
-                  setNotes([]);
-                  setMetadata(null);
-                  setAudioFileId(null);
-                }}
-                className="btn-secondary"
+                onClick={handleTranscribe}
+                disabled={isTranscribing}
+                className="btn-primary px-6 py-3 text-base"
               >
-                Start New Transcription
+                {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
               </button>
-            </div>
+            )}
           </div>
-        )}
+          {error && (
+            <div className="mt-6 p-4 bg-danger/10 border border-danger/30 rounded-md">
+              <p className="text-sm text-danger">{error}</p>
+            </div>
+          )}
+        </div>
       </main>
-
-      {/* Footer with metadata */}
-      {metadata && (
-        <footer className="bg-paper-dark border-t border-ink-soft/15 mt-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-center space-x-6 text-sm text-ink-soft">
-              <span>Instrument: {metadata.instrument}</span>
-              <span>Tempo: {metadata.tempo} BPM</span>
-              <span>Key: {metadata.key}</span>
-              <span>Time: {metadata.timeSignature}</span>
-            </div>
-          </div>
-        </footer>
-      )}
     </div>
   );
 }
