@@ -49,6 +49,24 @@ For Electron window: `npm run electron:dev`
 
 ---
 
+## Development
+
+Backend checks (from `backend/`, venv active):
+
+```bash
+ruff check app tests && mypy app     # lint + types
+python -m pytest tests/ -v           # unit + e2e tests
+python -m tests.benchmark_accuracy   # transcription accuracy report
+```
+
+Frontend checks (from `frontend/`):
+
+```bash
+npm run lint && npm run test && npm run build
+```
+
+---
+
 ## Building the distributable
 
 Requires: Python 3.11+, Node 20+, Xcode Command Line Tools (macOS).
