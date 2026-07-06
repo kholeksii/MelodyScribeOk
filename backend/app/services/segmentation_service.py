@@ -3,6 +3,7 @@ import logging
 from ..core.key_detector import KeyDetector
 from ..core.onset_detector import OnsetDetector
 from ..core.pitch_detector import PitchDetector
+from ..core.pitch_postprocess import fold_octave_outliers
 from ..core.quantizer import Quantizer
 from ..core.tempo_detector import TempoDetector
 from ..errors import FfmpegMissingError
@@ -281,6 +282,7 @@ class SegmentationService:
                 notes.append(rest)
 
         notes = self._filter_phantom_notes(notes, tempo)
+        notes = fold_octave_outliers(notes)
 
         logger.info(
             f"_segment_notes: {len(onsets)} onsets, {len(pitches)} pitches -> {len(notes)} notes"
