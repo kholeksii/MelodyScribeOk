@@ -160,6 +160,13 @@ export const en = {
   errNetwork: 'Cannot reach the server. Is the backend running?',
   errUnknown: 'Unknown error',
 
+  // Autosave recovery (U19)
+  recoveryPrompt: 'Restore your last session?',
+  recoveryDetail: '{title} — {notes} notes, saved {when}',
+  restore: 'Restore',
+  discard: 'Discard',
+  recoveryAudioHint: 'Audio is not kept in autosave — upload the file again to see the waveform.',
+
   // Keyboard shortcuts (U18)
   shortcutsTitle: 'Keyboard shortcuts',
   shortcutsHintTitle: 'Keyboard shortcuts (?)',

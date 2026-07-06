@@ -9,6 +9,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { ShortcutHelp } from './ShortcutHelp';
 import { useProjectStore } from '../store/projectStore';
 import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
+import { clearAutosave } from '../services/autosave';
 import { useT, instrumentLabel } from '../i18n';
 
 export const EditorScreen: React.FC = () => {
@@ -48,6 +49,7 @@ export const EditorScreen: React.FC = () => {
     setNotes([]);
     setMetadata(null);
     setAudioFileId(null);
+    clearAutosave();
   };
 
   const chips = metadata

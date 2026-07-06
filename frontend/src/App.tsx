@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
@@ -9,19 +9,13 @@ import { useRecentProjectsStore } from './store/recentProjectsStore';
 import { useToast } from './components/Toast';
 import { Tour } from './components/Tour';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { RecoveryBanner } from './components/RecoveryBanner';
 import { apiClient } from './services/apiClient';
-import { useT, localizeError, instrumentLabel, TFunc } from './i18n';
+import { startAutosave } from './services/autosave';
+import { relativeTime } from './utils/relativeTime';
+import { useT, localizeError, instrumentLabel } from './i18n';
 import { useUiStore } from './store/uiStore';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
-
-function relativeTime(ts: number, locale: string, t: TFunc): string {
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  const diffMs = ts - Date.now();
-  const diffDays = Math.round(diffMs / 86400000);
-  if (Math.abs(diffDays) < 1) return t('today');
-  if (Math.abs(diffDays) < 7) return rtf.format(diffDays, 'day');
-  return rtf.format(Math.round(diffDays / 7), 'week');
-}
 
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('violin');
@@ -44,6 +38,9 @@ function App() {
     setLoading,
     setError,
   } = useProjectStore();
+
+  // Autosave the working session 2s after any notes/metadata change (U19)
+  useEffect(() => startAutosave(), []);
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
@@ -110,6 +107,7 @@ function App() {
       {/* Upload screen */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
+          <RecoveryBanner />
           {recents.length > 0 && (
             <div className="mb-6 text-left max-w-md mx-auto">
               <p className="text-sm font-semibold text-ink mb-2">{t('recentProjects')}</p>

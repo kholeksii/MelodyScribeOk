@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useProjectStore } from '../../store/projectStore';
 import { saveProject, loadProject } from '../../services/projectFile';
+import { clearAutosave } from '../../services/autosave';
 import { Project } from '../../types';
 import { useT } from '../../i18n';
 
@@ -25,6 +26,8 @@ export const Toolbar: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    // Explicitly saved — the autosaved working copy is no longer needed
+    clearAutosave();
   };
 
   const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
