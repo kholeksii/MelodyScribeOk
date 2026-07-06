@@ -157,6 +157,9 @@ class SegmentationService:
                     confidence=float(note.get("confidence", 0.0)),
                     theory_corrected=False,
                     articulation=note.get("articulation"),
+                    tuplet=note.get("tuplet"),
+                    tie_start=bool(note.get("tie_start", False)),
+                    tie_end=bool(note.get("tie_end", False)),
                 )
                 note_data.append(note_obj)
             except Exception as e:

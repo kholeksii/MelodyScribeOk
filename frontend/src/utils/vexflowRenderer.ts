@@ -1,6 +1,6 @@
 import { NoteData } from '../types';
 import {
-  convertDurationToVexFlow,
+  convertDurationSpec,
   convertKeySignatureToVexFlow,
   convertPitchToVexFlow,
   groupNotesByMeasure,
@@ -36,10 +36,17 @@ export async function renderScore(
     type Tickable = InstanceType<typeof StaveNote>;
     type TaggedTickable = Tickable & { noteDataId?: string };
 
-    // Rest and BarNote classes may not be available in all VexFlow versions
+    // Rest/BarNote/Dot/Tuplet/StaveTie may not exist in all VexFlow versions
     const flowExtras = Vex.Flow as unknown as {
       Rest?: new (opts: { duration: string }) => Tickable;
       BarNote?: new () => Tickable;
+      Dot?: { buildAndAttach: (notes: Tickable[], opts?: { all?: boolean }) => void };
+      Tuplet?: new (notes: Tickable[]) => {
+        setContext: (ctx: unknown) => { draw: () => void };
+      };
+      StaveTie?: new (opts: { first_note: Tickable; last_note: Tickable }) => {
+        setContext: (ctx: unknown) => { draw: () => void };
+      };
     };
     const Rest = flowExtras.Rest ?? null;
     const BarNote = flowExtras.BarNote ?? null;
@@ -74,7 +81,18 @@ export async function renderScore(
 
     // Helper: convert a single NoteData to a VexFlow tickable
     const makeVexNote = (note: NoteData, idx: number): TaggedTickable => {
-      const duration = convertDurationToVexFlow(note.duration);
+      const { code: duration, dots } = convertDurationSpec(note.duration);
+
+      const applyDots = (tickable: TaggedTickable): TaggedTickable => {
+        if (dots > 0 && flowExtras.Dot) {
+          try {
+            flowExtras.Dot.buildAndAttach([tickable], { all: true });
+          } catch (e) {
+            console.warn('Dot failed:', e);
+          }
+        }
+        return tickable;
+      };
 
       if (note.pitch === 'rest') {
         console.log(`Rest ${idx}: duration=${note.duration} -> ${duration}`);
@@ -82,14 +100,14 @@ export async function renderScore(
           try {
             const rest = new Rest({ duration }) as TaggedTickable;
             rest.noteDataId = note.id;
-            return rest;
+            return applyDots(rest);
           } catch (e) {
             console.warn(`Failed to create Rest with Rest class, using fallback: ${e}`);
           }
         }
         const vexRest = new StaveNote({ keys: ['b/4'], duration }) as TaggedTickable;
         vexRest.noteDataId = note.id;
-        return vexRest;
+        return applyDots(vexRest);
       }
 
       const pitch = convertPitchToVexFlow(note.pitch);
@@ -98,11 +116,13 @@ export async function renderScore(
       );
       const vexNote = new StaveNote({ keys: [pitch], duration }) as TaggedTickable;
       vexNote.noteDataId = note.id;
-      return vexNote;
+      return applyDots(vexNote);
     };
 
-    // Group notes by measure, insert BarNote between measure groups
+    // Group notes by measure, insert BarNote between measure groups.
+    // Collect triplet groups and tie pairs for drawing after the voice.
     const allTickables: Tickable[] = [];
+    const noteTickables: { data: NoteData; tickable: TaggedTickable }[] = [];
     let globalIdx = 0;
     groupNotesByMeasure(notes).forEach((measureNotes, measureIdx) => {
       if (measureIdx > 0 && BarNote) {
@@ -113,8 +133,24 @@ export async function renderScore(
         }
       }
       measureNotes.forEach((note) => {
-        allTickables.push(makeVexNote(note, globalIdx++));
+        const tickable = makeVexNote(note, globalIdx++);
+        allTickables.push(tickable);
+        noteTickables.push({ data: note, tickable });
       });
+    });
+
+    const tripletGroups: Tickable[][] = [];
+    let currentTriplet: Tickable[] = [];
+    noteTickables.forEach(({ data, tickable }) => {
+      if (data.tuplet === 'triplet') {
+        currentTriplet.push(tickable);
+        if (currentTriplet.length === 3) {
+          tripletGroups.push(currentTriplet);
+          currentTriplet = [];
+        }
+      } else {
+        currentTriplet = [];
+      }
     });
 
     // Create voice WITHOUT strict beat requirement
@@ -125,6 +161,35 @@ export async function renderScore(
     const formatter = new Formatter();
     formatter.joinVoices([voice]).format([voice], 900);
     voice.draw(context, stave);
+
+    if (flowExtras.Tuplet) {
+      for (const group of tripletGroups) {
+        try {
+          new flowExtras.Tuplet(group).setContext(context).draw();
+        } catch (e) {
+          console.warn('Tuplet draw failed:', e);
+        }
+      }
+    }
+
+    if (flowExtras.StaveTie) {
+      for (let i = 0; i < noteTickables.length - 1; i++) {
+        const current = noteTickables[i];
+        const next = noteTickables[i + 1];
+        if (current.data.tieStart && next.data.tieEnd) {
+          try {
+            new flowExtras.StaveTie({
+              first_note: current.tickable,
+              last_note: next.tickable,
+            })
+              .setContext(context)
+              .draw();
+          } catch (e) {
+            console.warn('StaveTie draw failed:', e);
+          }
+        }
+      }
+    }
 
     console.log('✅ Notation rendered successfully');
     return svg;

@@ -31,11 +31,22 @@ const DURATION_MAP: { [key: string]: string } = {
   sixteenth: '16',
 };
 
-/** Convert backend duration name to a VexFlow duration code.
- * TODO(U13): dotted durations ("half.", "quarter.", "eighth.") currently
- * fall back to a plain quarter — they need a dot modifier in VexFlow. */
+export interface VexDurationSpec {
+  code: string;
+  dots: number;
+}
+
+/** Convert a backend duration name (possibly dotted, e.g. "quarter.")
+ * to a VexFlow duration code plus dot count. */
+export function convertDurationSpec(duration: string): VexDurationSpec {
+  const dotted = duration.endsWith('.');
+  const base = dotted ? duration.slice(0, -1) : duration;
+  return { code: DURATION_MAP[base] || 'q', dots: dotted ? 1 : 0 };
+}
+
+/** Convert backend duration name to a bare VexFlow duration code. */
 export function convertDurationToVexFlow(duration: string): string {
-  return DURATION_MAP[duration] || 'q'; // Default to quarter note
+  return convertDurationSpec(duration).code;
 }
 
 /** Group notes by measure number, groups ordered by measure. */

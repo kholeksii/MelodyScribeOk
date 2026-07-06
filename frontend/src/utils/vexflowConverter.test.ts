@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   confidenceColor,
+  convertDurationSpec,
   convertDurationToVexFlow,
   convertKeySignatureToVexFlow,
   convertPitchToVexFlow,
@@ -62,10 +63,22 @@ describe('convertDurationToVexFlow', () => {
     expect(convertDurationToVexFlow('sixteenth')).toBe('16');
   });
 
-  it('falls back to quarter for unknown values (incl. dotted — see U13)', () => {
+  it('maps dotted durations to the base code (dot handled separately)', () => {
     expect(convertDurationToVexFlow('quarter.')).toBe('q');
-    expect(convertDurationToVexFlow('half.')).toBe('q');
+    expect(convertDurationToVexFlow('half.')).toBe('h');
+    expect(convertDurationToVexFlow('eighth.')).toBe('8');
+  });
+
+  it('falls back to quarter for unknown values', () => {
     expect(convertDurationToVexFlow('nonsense')).toBe('q');
+  });
+});
+
+describe('convertDurationSpec', () => {
+  it('returns dot counts for dotted durations', () => {
+    expect(convertDurationSpec('quarter.')).toEqual({ code: 'q', dots: 1 });
+    expect(convertDurationSpec('half.')).toEqual({ code: 'h', dots: 1 });
+    expect(convertDurationSpec('quarter')).toEqual({ code: 'q', dots: 0 });
   });
 });
 
