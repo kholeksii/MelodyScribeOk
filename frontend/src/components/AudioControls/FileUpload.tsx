@@ -3,6 +3,7 @@ import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
 import { RecordButton } from './RecordButton';
 import { useProjectStore } from '../../store/projectStore';
+import { useT, localizeError } from '../../i18n';
 
 interface FileUploadProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -13,6 +14,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const setAudioBlob = useProjectStore((state) => state.setAudioBlob);
+  const t = useT();
 
   const handleFile = useCallback(async (file: File) => {
     // Validate file type
@@ -23,7 +25,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
     const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
 
     if (!isValidType) {
-      setError('Unsupported file format. Please use WAV, MP3, FLAC, OGG, or M4A.');
+      setError(t('unsupportedFormat'));
       return;
     }
 
@@ -35,11 +37,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       setAudioBlob(file);
       onUploadComplete(audioInfo);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(localizeError(err, t) || t('uploadFailed'));
     } finally {
       setIsUploading(false);
     }
-  }, [onUploadComplete, setAudioBlob]);
+  }, [onUploadComplete, setAudioBlob, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -83,7 +85,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
         {isUploading ? (
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-            <p className="text-gray-600">Uploading...</p>
+            <p className="text-gray-600">{t('uploading')}</p>
           </div>
         ) : (
           <>
@@ -105,10 +107,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
             </div>
             <div className="mb-4">
               <p className="text-lg font-medium text-gray-900 mb-1">
-                Upload audio file
+                {t('uploadTitle')}
               </p>
               <p className="text-sm text-gray-500">
-                Drag and drop or click to select WAV, MP3, FLAC, OGG, or M4A file
+                {t('uploadHint')}
               </p>
             </div>
             <input
@@ -122,7 +124,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
               htmlFor="file-upload"
               className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Choose file
+              {t('chooseFile')}
             </label>
           </>
         )}
@@ -130,7 +132,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
       <div className="flex items-center gap-3 my-4">
         <div className="flex-1 h-px bg-gray-300" />
-        <span className="text-xs text-gray-400 uppercase">or</span>
+        <span className="text-xs text-gray-400 uppercase">{t('or')}</span>
         <div className="flex-1 h-px bg-gray-300" />
       </div>
 

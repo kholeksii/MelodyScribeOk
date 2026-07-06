@@ -3,8 +3,10 @@ import { useProjectStore } from '../store/projectStore';
 import { apiClient } from '../services/apiClient';
 import jsPDF from 'jspdf';
 import { svg2pdf } from 'svg2pdf.js';
+import { useT, localizeError } from '../i18n';
 
 export const ExportButton: React.FC = () => {
+  const t = useT();
   const notes = useProjectStore((state) => state.notes);
   const metadata = useProjectStore((state) => state.metadata);
   const setNotes = useProjectStore((state) => state.setNotes);
@@ -42,7 +44,7 @@ export const ExportButton: React.FC = () => {
     try {
       const svgEl = document.querySelector('.notation-display svg') as SVGSVGElement | null;
       if (!svgEl) {
-        setError('Notation SVG not found. Transcribe first.');
+        setError(t('svgNotFound'));
         return;
       }
       const svgWidth = svgEl.viewBox?.baseVal?.width || svgEl.clientWidth || 800;
@@ -54,7 +56,7 @@ export const ExportButton: React.FC = () => {
       await svg2pdf(svgEl, doc, { x: 0, y: 0, width: svgWidth * scale, height: svgHeight * scale });
       doc.save(`${metadata.title.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'PDF export failed');
+      setError(localizeError(err, t) || t('pdfExportFailed'));
     } finally {
       setIsExporting(false);
     }
@@ -75,7 +77,7 @@ export const ExportButton: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed');
+      setError(localizeError(err, t) || t('exportFailed'));
     } finally {
       setIsExporting(false);
     }
@@ -97,7 +99,7 @@ export const ExportButton: React.FC = () => {
         key: result.key,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(localizeError(err, t) || t('importFailed'));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -110,27 +112,27 @@ export const ExportButton: React.FC = () => {
         onClick={handleExportPDF}
         disabled={isExporting || !notes.length}
         className="btn-primary"
-        title="Export notation as PDF"
+        title={t('exportPdfTitle')}
       >
-        {isExporting ? '⟳ Exporting…' : 'Export PDF'}
+        {isExporting ? `⟳ ${t('exporting')}` : t('exportPdf')}
       </button>
 
       <button
         onClick={handleExportMusicXML}
         disabled={isExporting || !notes.length}
         className="btn-secondary"
-        title="Export to MusicXML (open in MuseScore, Finale, Sibelius)"
+        title={t('exportMusicXmlTitle')}
       >
-        {isExporting ? '⟳ Exporting…' : 'MusicXML'}
+        {isExporting ? `⟳ ${t('exporting')}` : 'MusicXML'}
       </button>
 
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={isImporting}
         className="btn-secondary"
-        title="Import MusicXML file"
+        title={t('importTitle')}
       >
-        {isImporting ? '⟳ Importing…' : 'Import'}
+        {isImporting ? `⟳ ${t('importing')}` : t('importLabel')}
       </button>
       <input
         ref={fileInputRef}
