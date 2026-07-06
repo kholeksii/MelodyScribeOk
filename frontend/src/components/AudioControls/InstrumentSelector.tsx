@@ -1,5 +1,6 @@
 import React from 'react';
 import { Instrument } from '../../types';
+import { useT, instrumentLabel } from '../../i18n';
 
 interface InstrumentSelectorProps {
   value: Instrument;
@@ -10,16 +11,15 @@ export const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({
   value,
   onChange,
 }) => {
-  const instruments: { value: Instrument; label: string }[] = [
-    { value: 'violin', label: 'Violin' },
-    { value: 'piano', label: 'Piano' },
-    { value: 'guitar', label: 'Guitar' },
-  ];
+  const t = useT();
+  const instruments: { value: Instrument; label: string }[] = (
+    ['violin', 'piano', 'guitar'] as Instrument[]
+  ).map((v) => ({ value: v, label: instrumentLabel(v, t) }));
 
   return (
     <div className="flex items-center space-x-2">
       <label htmlFor="instrument-select" className="text-sm font-medium text-gray-700">
-        Instrument:
+        {t('instrument')}:
       </label>
       <select
         id="instrument-select"

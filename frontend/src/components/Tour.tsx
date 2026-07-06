@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useT } from '../i18n';
+import type { TranslationKey } from '../i18n/en';
 
 const TOUR_KEY = 'melodyscribe_tour_seen';
 
-const STEPS = [
-  {
-    title: 'Upload audio',
-    body: 'Drop an audio file or record directly from your microphone to get started.',
-    anchor: 'upload-zone',
-  },
-  {
-    title: 'Set BPM, key & time',
-    body: 'Optionally enter BPM, time signature and key before transcribing for better accuracy.',
-    anchor: 'transcribe-options',
-  },
-  {
-    title: 'Export your score',
-    body: 'After transcribing, edit notes then export to PDF or MusicXML.',
-    anchor: null,
-  },
+const STEPS: { title: TranslationKey; body: TranslationKey; anchor: string | null }[] = [
+  { title: 'tour1Title', body: 'tour1Body', anchor: 'upload-zone' },
+  { title: 'tour2Title', body: 'tour2Body', anchor: 'transcribe-options' },
+  { title: 'tour3Title', body: 'tour3Body', anchor: null },
 ];
 
 function useTour() {
@@ -48,6 +38,7 @@ function useTour() {
 
 export const Tour: React.FC = () => {
   const { currentStep, visible, next, skip } = useTour();
+  const t = useT();
 
   if (!visible) return null;
 
@@ -62,22 +53,22 @@ export const Tour: React.FC = () => {
       >
         <div className="flex justify-between items-start mb-2">
           <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
-            Step {currentStep + 1} / {STEPS.length}
+            {t('tourStep')} {currentStep + 1} / {STEPS.length}
           </span>
           <button
             onClick={skip}
             className="text-xs text-gray-400 hover:text-gray-600"
           >
-            Skip
+            {t('tourSkip')}
           </button>
         </div>
-        <h3 className="font-bold text-gray-900 mb-1">{step.title}</h3>
-        <p className="text-sm text-gray-600 mb-4">{step.body}</p>
+        <h3 className="font-bold text-gray-900 mb-1">{t(step.title)}</h3>
+        <p className="text-sm text-gray-600 mb-4">{t(step.body)}</p>
         <button
           onClick={next}
           className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
         >
-          {currentStep >= STEPS.length - 1 ? 'Get started' : 'Next'}
+          {currentStep >= STEPS.length - 1 ? t('tourStart') : t('tourNext')}
         </button>
       </div>
     </div>

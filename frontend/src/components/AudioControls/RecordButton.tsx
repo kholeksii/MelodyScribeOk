@@ -4,6 +4,7 @@ import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
 import { useProjectStore } from '../../store/projectStore';
 import { useToast } from '../Toast';
+import { useT, localizeError } from '../../i18n';
 
 interface RecordButtonProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -13,6 +14,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
   const { state, elapsedSec, error, start, stop } = useAudioRecorder();
   const setAudioBlob = useProjectStore((s) => s.setAudioBlob);
   const { showToast } = useToast();
+  const t = useT();
 
   const handleClick = async () => {
     if (state === 'idle') {
@@ -25,7 +27,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
         const audioInfo = await apiClient.uploadAudio(file);
         onUploadComplete(audioInfo);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Upload failed', 'error');
+        showToast(localizeError(err, t) || t('uploadFailed'), 'error');
       }
     }
   };
@@ -43,9 +45,9 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
               : 'bg-gray-600 hover:bg-gray-700 text-white'
         }`}
       >
-        {state === 'idle' && 'Record'}
-        {state === 'recording' && `${elapsedSec}s — click to stop`}
-        {state === 'processing' && 'Processing...'}
+        {state === 'idle' && t('record')}
+        {state === 'recording' && t('recordingStop', { s: elapsedSec })}
+        {state === 'processing' && t('processing')}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
