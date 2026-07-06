@@ -54,6 +54,8 @@ backend/uploads/
 *.flac
 *.ogg
 *.m4a
+# ...except committed regression fixtures
+!backend/tests/fixtures/real/*.m4a
 
 # Node.js (for future frontend)
 node_modules/

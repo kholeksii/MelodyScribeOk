@@ -76,25 +76,17 @@ class SegmentationService:
             raise RuntimeError(f"Audio load failed: {exc}") from exc
 
         try:
+            logger.info("Detecting onsets...")
+            onsets = self.onset_detector.detect(audio, sr)
+            logger.info(f"Detected {len(onsets)} onsets")
+
             if bpm is not None:
                 logger.info(f"Using user-supplied BPM: {bpm}")
                 tempo = bpm
             else:
-                logger.info("Detecting tempo...")
-                tempo = self.tempo_detector.detect(audio, sr)
+                logger.info("Detecting tempo from inter-onset intervals...")
+                tempo = self.tempo_detector.detect(audio, sr, onsets=onsets)
             logger.info(f"Detected tempo: {tempo} (type={type(tempo).__name__})")
-
-            if key is not None:
-                logger.info(f"Using user-supplied key: {key}")
-                detected_key = key
-            else:
-                logger.info("Detecting key...")
-                detected_key = self.key_detector.detect(audio, sr)
-                logger.info(f"Detected key: {detected_key} (type={type(detected_key).__name__})")
-
-            logger.info("Detecting onsets...")
-            onsets = self.onset_detector.detect(audio, sr)
-            logger.info(f"Detected {len(onsets)} onsets")
 
             logger.info("Detecting pitch...")
             pitches = self.pitch_detector.detect(audio, sr, instrument)
@@ -108,6 +100,27 @@ class SegmentationService:
             logger.info("Quantizing notes...")
             notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
             logger.info(f"Quantized {len(notes)} notes")
+
+            if key is not None:
+                logger.info(f"Using user-supplied key: {key}")
+                detected_key = key
+            else:
+                # Segmented notes are cleaner than raw chroma (no overtones);
+                # fall back to the chroma path only for very short takes
+                pitches_seq = [n.get("note", "rest") for n in notes]
+                durations_seq = [
+                    self.quantizer.DURATION_MAP.get(n.get("duration", "quarter"), 1.0)
+                    for n in notes
+                ]
+                if sum(1 for p in pitches_seq if p != "rest") >= 8:
+                    logger.info("Detecting key from segmented notes + chroma...")
+                    detected_key = self.key_detector.detect_combined(
+                        audio, sr, pitches_seq, durations_seq
+                    )
+                else:
+                    logger.info("Detecting key from chroma (short take)...")
+                    detected_key = self.key_detector.detect(audio, sr)
+                logger.info(f"Detected key: {detected_key}")
         except Exception as exc:
             logger.error(f"Transcription analysis failed: {exc}", exc_info=True)
             raise RuntimeError(f"Transcription analysis failed: {exc}") from exc
