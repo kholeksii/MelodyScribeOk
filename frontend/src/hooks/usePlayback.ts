@@ -40,6 +40,7 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
   const [currentBpm, setCurrentBpm] = useState(bpm);
 
   const setPlayingNoteId = useProjectStore((state) => state.setPlayingNoteId);
+  const setStoreIsPlaying = useProjectStore((state) => state.setIsPlaying);
 
   // Initialize synth
   useEffect(() => {
@@ -108,24 +109,29 @@ export const usePlayback = (options: UsePlaybackOptions = {}) => {
         Tone.Transport.schedule(() => {
           Tone.Transport.stop();
           Tone.Transport.cancel();
-          setTimeout(() => setIsPlaying(false), 0);
+          setTimeout(() => {
+            setIsPlaying(false);
+            setStoreIsPlaying(false);
+          }, 0);
         }, endTime + 0.1);
 
         Tone.Transport.start();
         setIsPlaying(true);
+        setStoreIsPlaying(true);
       } catch (error) {
         console.error('Playback error:', error);
       }
     },
-    [currentBpm, setPlayingNoteId]
+    [currentBpm, setPlayingNoteId, setStoreIsPlaying]
   );
 
   const stop = useCallback(() => {
     Tone.Transport.stop();
     Tone.Transport.cancel();
     setIsPlaying(false);
+    setStoreIsPlaying(false);
     setPlayingNoteId(null);
-  }, [setPlayingNoteId]);
+  }, [setPlayingNoteId, setStoreIsPlaying]);
 
   const toggleMetronome = useCallback(() => {
     if (!metronomeRef.current) return;
