@@ -1,5 +1,6 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { spawn, ChildProcess } from 'child_process';
 import * as net from 'net';
 
@@ -96,6 +97,53 @@ const createWindow = () => {
 
   mainWindow.on('closed', () => { mainWindow = null; });
 };
+
+// ── Project file IPC (U20) ─────────────────────────────────────────
+
+type ProjectReadResult =
+  | { ok: true; data: Uint8Array }
+  | { ok: false; error: 'invalid_extension' | 'not_found' | 'unreadable' };
+
+const MELODY_FILTER = [{ name: 'MelodyScribe Project', extensions: ['melody'] }];
+
+ipcMain.handle('project:read', async (_event, filePath: string): Promise<ProjectReadResult> => {
+  if (typeof filePath !== 'string' || !filePath.endsWith('.melody')) {
+    return { ok: false, error: 'invalid_extension' };
+  }
+  try {
+    const data = await fs.readFile(filePath);
+    return { ok: true, data };
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    return { ok: false, error: code === 'ENOENT' ? 'not_found' : 'unreadable' };
+  }
+});
+
+ipcMain.handle(
+  'project:save-dialog',
+  async (_event, defaultName: string, data: Uint8Array): Promise<string | null> => {
+    const options = { defaultPath: defaultName, filters: MELODY_FILTER };
+    const { canceled, filePath } = mainWindow
+      ? await dialog.showSaveDialog(mainWindow, options)
+      : await dialog.showSaveDialog(options);
+    if (canceled || !filePath) return null;
+    await fs.writeFile(filePath, Buffer.from(data));
+    return filePath;
+  }
+);
+
+ipcMain.handle(
+  'project:open-dialog',
+  async (): Promise<{ path: string; data: Uint8Array } | null> => {
+    const options = { filters: MELODY_FILTER, properties: ['openFile' as const] };
+    const { canceled, filePaths } = mainWindow
+      ? await dialog.showOpenDialog(mainWindow, options)
+      : await dialog.showOpenDialog(options);
+    if (canceled || filePaths.length === 0) return null;
+    const data = await fs.readFile(filePaths[0]);
+    return { path: filePaths[0], data };
+  }
+);
 
 // ── App events ──────────────────────────────────────────────────────
 

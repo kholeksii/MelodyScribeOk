@@ -1,6 +1,5 @@
 import JSZip from 'jszip';
 import { NoteData, Project } from '../types';
-import { useRecentProjectsStore } from '../store/recentProjectsStore';
 
 // .melody files saved before the theoryCorrected rename carry llmCorrected
 type StoredNoteData = Omit<NoteData, 'theoryCorrected'> & {
@@ -13,8 +12,9 @@ function normalizeNote(note: StoredNoteData): NoteData {
   return { ...rest, theoryCorrected: theoryCorrected ?? llmCorrected ?? false };
 }
 
-export async function saveProject(project: Project, audioBlob: Blob | null, filename?: string): Promise<Blob> {
-  useRecentProjectsStore.getState().addRecent(filename ?? project.metadata.title);
+// Recents bookkeeping lives with the callers (Toolbar/RecentProjects, U20) —
+// only they know the absolute path chosen in the Electron save dialog.
+export async function saveProject(project: Project, audioBlob: Blob | null): Promise<Blob> {
   const zip = new JSZip();
   zip.file('project.json', JSON.stringify(project, null, 2));
   if (audioBlob) {
@@ -30,7 +30,6 @@ export async function saveProject(project: Project, audioBlob: Blob | null, file
 }
 
 export async function loadProject(file: File): Promise<{ project: Project; audioBlob: Blob | null }> {
-  useRecentProjectsStore.getState().addRecent(file.name);
   const zip = await JSZip.loadAsync(file);
 
   const projectJson = await zip.file('project.json')?.async('string');
