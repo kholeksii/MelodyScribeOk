@@ -81,6 +81,7 @@ export const en = {
   waveformToggleTitle: 'Toggle waveform display',
   noteOnset: 'Note onset',
   playing: 'Playing',
+  playhead: 'Playhead (click to seek)',
 
   // Note toolbar
   octave: 'Octave',

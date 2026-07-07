@@ -12,6 +12,8 @@ interface ProjectState {
   audioBlob: Blob | null;
   selectedNoteId: string | null;
   playingNoteId: string | null;
+  /** Whether the Tone.js transport is currently running (mirrored by usePlayback). */
+  isPlaying: boolean;
   isLoading: boolean;
   error: string | null;
   corrections: Correction[];
@@ -28,6 +30,7 @@ interface ProjectState {
   setMetadata: (meta: ProjectMetadata | null) => void;
   setSelectedNote: (id: string | null) => void;
   setPlayingNoteId: (id: string | null) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
   setAudioFileId: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -54,6 +57,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   audioBlob: null,
   selectedNoteId: null,
   playingNoteId: null,
+  isPlaying: false,
   isLoading: false,
   error: null,
   corrections: [],
@@ -144,6 +148,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setMetadata: (metadata) => set({ metadata }),
   setSelectedNote: (selectedNoteId) => set({ selectedNoteId }),
   setPlayingNoteId: (playingNoteId) => set({ playingNoteId }),
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
   setAudioFileId: (audioFileId) => set({ audioFileId }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
@@ -160,6 +165,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     audioBlob: null,
     selectedNoteId: null,
     playingNoteId: null,
+    isPlaying: false,
     isLoading: false,
     error: null,
     corrections: [],
