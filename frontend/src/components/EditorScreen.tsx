@@ -6,6 +6,7 @@ import { PlaybackControls } from './Playback/PlaybackControls';
 import { ExportButton } from './ExportButton';
 import { WaveformDisplay } from './WaveformDisplay';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 import { ShortcutHelp } from './ShortcutHelp';
 import { useProjectStore } from '../store/projectStore';
 import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
@@ -74,7 +75,7 @@ export const EditorScreen: React.FC = () => {
             {chips.map((chip) => (
               <span
                 key={chip}
-                className="whitespace-nowrap rounded-full border border-ink-soft/20 bg-white/60 px-2.5 py-0.5 text-xs text-ink-soft"
+                className="whitespace-nowrap rounded-full border border-ink-soft/20 bg-surface/60 px-2.5 py-0.5 text-xs text-ink-soft"
               >
                 {chip}
               </span>
@@ -99,6 +100,7 @@ export const EditorScreen: React.FC = () => {
             >
               ?
             </button>
+            <ThemeToggle />
             <LanguageSwitcher />
           </div>
         </div>

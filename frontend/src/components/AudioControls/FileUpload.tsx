@@ -75,8 +75,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           isDragOver
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-accent bg-accent/10'
+            : 'border-ink-soft/30 hover:border-ink-soft/60'
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -84,14 +84,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       >
         {isUploading ? (
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-            <p className="text-gray-600">{t('uploading')}</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mb-2"></div>
+            <p className="text-ink-soft">{t('uploading')}</p>
           </div>
         ) : (
           <>
             <div className="mb-4">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-ink-soft/60"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -106,10 +106,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
               </svg>
             </div>
             <div className="mb-4">
-              <p className="text-lg font-medium text-gray-900 mb-1">
+              <p className="text-lg font-medium text-ink mb-1">
                 {t('uploadTitle')}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-ink-soft">
                 {t('uploadHint')}
               </p>
             </div>
@@ -122,7 +122,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
             />
             <label
               htmlFor="file-upload"
-              className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
             >
               {t('chooseFile')}
             </label>
@@ -131,16 +131,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       </div>
 
       <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 h-px bg-gray-300" />
-        <span className="text-xs text-gray-400 uppercase">{t('or')}</span>
-        <div className="flex-1 h-px bg-gray-300" />
+        <div className="flex-1 h-px bg-ink-soft/30" />
+        <span className="text-xs text-ink-soft/60 uppercase">{t('or')}</span>
+        <div className="flex-1 h-px bg-ink-soft/30" />
       </div>
 
       <RecordButton onUploadComplete={onUploadComplete} />
 
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="mt-4 p-3 bg-danger/10 border border-danger/30 rounded-md">
+          <p className="text-sm text-danger">{error}</p>
         </div>
       )}
     </div>

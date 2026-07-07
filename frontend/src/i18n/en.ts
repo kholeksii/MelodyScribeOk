@@ -161,6 +161,10 @@ export const en = {
   errNetwork: 'Cannot reach the server. Is the backend running?',
   errUnknown: 'Unknown error',
 
+  // Theme (U22)
+  themeToggleTitle: 'Toggle dark mode',
+  pdfDate: 'Exported {date}',
+
   // Recent projects (U20)
   fileNotFound: 'File not found — removed from the recent list.',
   openRecentTitle: 'Open {name}',
