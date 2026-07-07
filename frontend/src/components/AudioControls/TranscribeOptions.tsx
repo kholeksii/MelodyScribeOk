@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useT } from '../../i18n';
 
 interface TranscribeOptionsProps {
   bpm: string;
@@ -67,6 +68,7 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
   bpm, setBpm, timeSignature, setTimeSignature, musicalKey, setMusicalKey,
 }) => {
   const { tap, tapCount, computedBpm } = useTapTempo(setBpm);
+  const t = useT();
 
   const handleBpmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -83,7 +85,7 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
           type="number"
           value={bpm}
           onChange={handleBpmChange}
-          placeholder="auto"
+          placeholder={t('auto')}
           min={40}
           max={300}
           className="w-20 px-2 py-1.5 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
@@ -92,18 +94,18 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
           type="button"
           onClick={tap}
           className="px-3 py-1.5 text-sm font-medium border border-purple-300 rounded bg-white hover:bg-purple-100 active:bg-purple-200 transition text-purple-700"
-          title="Tap at least 4 times to the beat"
+          title={t('tapHint')}
         >
           {tapCount === 0
-            ? 'Tap tempo'
+            ? t('tapTempo')
             : tapCount < 4
-              ? `Tap ${tapCount}/4...`
+              ? t('tapProgress', { n: tapCount })
               : `BPM: ${computedBpm}`}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-purple-800">Time:</label>
+        <label className="text-sm font-medium text-purple-800">{t('time')}:</label>
         <select
           value={timeSignature}
           onChange={(e) => setTimeSignature(e.target.value)}
@@ -116,13 +118,13 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-purple-800">Key:</label>
+        <label className="text-sm font-medium text-purple-800">{t('key')}:</label>
         <select
           value={musicalKey}
           onChange={(e) => setMusicalKey(e.target.value)}
           className="px-2 py-1.5 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
         >
-          <option value="">auto</option>
+          <option value="">{t('auto')}</option>
           {KEYS.map((k) => (
             <option key={k} value={k}>{k}</option>
           ))}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NoteData } from '../types';
 import { useProjectStore } from '../store/projectStore';
+import { useT } from '../i18n';
 
 const BASE_URL = 'http://localhost:8000/api';
 const WAVEFORM_COLOR = '#94a3b8';    // slate-400
@@ -19,6 +20,7 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({ notes, tempo }
   const playingNoteId = useProjectStore((state) => state.playingNoteId);
   const [samples, setSamples] = useState<Float32Array | null>(null);
   const [durationSec, setDurationSec] = useState(0);
+  const t = useT();
 
   // Decode audio once when audioFileId changes
   useEffect(() => {
@@ -134,11 +136,11 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({ notes, tempo }
       <div className="mt-1 flex items-center gap-4 text-xs text-ink-soft">
         <span className="flex items-center gap-1">
           <span className="inline-block w-4 border-t border-blue-500" />
-          Note onset
+          {t('noteOnset')}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block w-4 border-t-2 border-green-600" />
-          Playing
+          {t('playing')}
         </span>
       </div>
     </div>

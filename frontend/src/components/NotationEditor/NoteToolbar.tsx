@@ -3,8 +3,11 @@ import { useProjectStore } from '../../store/projectStore';
 import { NoteData } from '../../types';
 import { apiClient } from '../../services/apiClient';
 import { SuggestionsPanel } from '../TheoryPanel/SuggestionsPanel';
+import { useT, durationLabel } from '../../i18n';
+import { transposeSemitones, durationToBeats } from '../../utils/noteUtils';
 
 export const NoteToolbar: React.FC = () => {
+  const t = useT();
   const selectedNoteId = useProjectStore((state) => state.selectedNoteId);
   const notes = useProjectStore((state) => state.notes);
   const metadata = useProjectStore((state) => state.metadata);
@@ -29,45 +32,14 @@ export const NoteToolbar: React.FC = () => {
     return null;
   }
 
-  // Pitch notes array
-  const pitchNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-  // Parse pitch (e.g., "G3" -> { note: "G", octave: 3 })
-  const parsePitch = (pitch: string) => {
-    const note = pitch.slice(0, -1);
-    const octave = parseInt(pitch.slice(-1), 10);
-    return { note, octave };
-  };
-
-  // Create pitch (e.g., { note: "G", octave: 3 } -> "G3")
-  const createPitch = (note: string, octave: number) => {
-    // Ensure octave is valid (0-8)
-    const validOctave = Math.max(0, Math.min(8, octave));
-    return `${note}${validOctave}`;
-  };
-
   const handlePitchUp = () => {
     if (!selectedNote || !selectedNoteId) return;
-    const { note, octave } = parsePitch(selectedNote.pitch);
-    const currentIndex = pitchNotes.indexOf(note);
-    if (currentIndex === -1) return;
-    let newIndex = currentIndex + 1;
-    let newOctave = octave;
-    if (newIndex >= pitchNotes.length) { newIndex = 0; newOctave += 1; }
-    const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId, { pitch: newPitch });
+    updateNote(selectedNoteId, { pitch: transposeSemitones(selectedNote.pitch, 1) });
   };
 
   const handlePitchDown = () => {
     if (!selectedNote || !selectedNoteId) return;
-    const { note, octave } = parsePitch(selectedNote.pitch);
-    const currentIndex = pitchNotes.indexOf(note);
-    if (currentIndex === -1) return;
-    let newIndex = currentIndex - 1;
-    let newOctave = octave;
-    if (newIndex < 0) { newIndex = pitchNotes.length - 1; newOctave -= 1; }
-    const newPitch = createPitch(pitchNotes[newIndex], newOctave);
-    updateNote(selectedNoteId, { pitch: newPitch });
+    updateNote(selectedNoteId, { pitch: transposeSemitones(selectedNote.pitch, -1) });
   };
 
   const handleDurationChange = (duration: string) => {
@@ -86,7 +58,7 @@ export const NoteToolbar: React.FC = () => {
       id: `rest-${Date.now()}`,
       pitch: 'rest',
       duration: selectedNote.duration,
-      startBeat: selectedNote.startBeat + (durationToBeats(selectedNote.duration) || 0),
+      startBeat: selectedNote.startBeat + durationToBeats(selectedNote.duration),
       measure: selectedNote.measure,
       velocity: 0,
       confidence: 1,
@@ -129,45 +101,33 @@ export const NoteToolbar: React.FC = () => {
     }
   };
 
-  // Helper to convert duration to beats
-  const durationToBeats = (duration: string): number => {
-    const beatMap: { [key: string]: number } = {
-      whole: 4,
-      half: 2,
-      quarter: 1,
-      eighth: 0.5,
-      sixteenth: 0.25,
-    };
-    return beatMap[duration] || 1;
-  };
-
   const durationButtons = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const durationLabels: { [key: string]: string } = {
-    whole: 'W',
-    half: 'H',
-    quarter: 'Q',
-    eighth: '8',
-    sixteenth: '16',
+    whole: '1',
+    half: '1/2',
+    quarter: '1/4',
+    eighth: '1/8',
+    sixteenth: '1/16',
   };
 
   return (
     <div className="rounded-lg border border-ink-soft/15 bg-white p-4 shadow-md">
       {/* Octave section — always visible */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium text-ink-soft">Octave:</span>
+        <span className="text-xs font-medium text-ink-soft">{t('octave')}:</span>
         <button
           onClick={() => shiftAllOctaves(1)}
           className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
-          title="Shift all notes up one octave"
+          title={t('allUpTitle')}
         >
-          ↑ All up
+          ↑ {t('allUp')}
         </button>
         <button
           onClick={() => shiftAllOctaves(-1)}
           className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
-          title="Shift all notes down one octave"
+          title={t('allDownTitle')}
         >
-          ↓ All down
+          ↓ {t('allDown')}
         </button>
       </div>
 
@@ -175,18 +135,18 @@ export const NoteToolbar: React.FC = () => {
         <>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-semibold text-ink">
-              Note: {selectedNote.pitch} ({selectedNote.duration})
+              {t('note')}: {selectedNote.pitch} ({durationLabel(selectedNote.duration, t)})
             </span>
           </div>
 
           {/* Pitch Controls */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-ink-soft">Pitch:</span>
+              <span className="text-xs font-medium text-ink-soft">{t('pitch')}:</span>
               <button
                 onClick={handlePitchDown}
                 className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
-                title="Pitch down (semitone)"
+                title={t('pitchDownTitle')}
               >
                 ▼
               </button>
@@ -196,7 +156,7 @@ export const NoteToolbar: React.FC = () => {
               <button
                 onClick={handlePitchUp}
                 className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
-                title="Pitch up (semitone)"
+                title={t('pitchUpTitle')}
               >
                 ▲
               </button>
@@ -205,7 +165,7 @@ export const NoteToolbar: React.FC = () => {
 
           {/* Duration Controls */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs font-medium text-ink-soft">Duration:</span>
+            <span className="text-xs font-medium text-ink-soft">{t('duration')}:</span>
             <div className="flex gap-1.5">
               {durationButtons.map((duration) => (
                 <button
@@ -216,7 +176,7 @@ export const NoteToolbar: React.FC = () => {
                       ? 'bg-accent text-white border border-accent'
                       : 'bg-white text-accent border border-ink-soft/30 hover:bg-paper-dark'
                   }`}
-                  title={`Set duration to ${duration}`}
+                  title={t('setDurationTitle', { d: durationLabel(duration, t) })}
                 >
                   {durationLabels[duration]}
                 </button>
@@ -229,16 +189,16 @@ export const NoteToolbar: React.FC = () => {
             <button
               onClick={handleAddRest}
               className="px-4 py-1.5 bg-valid hover:opacity-90 text-white rounded font-medium text-sm transition"
-              title="Add rest after this note"
+              title={t('addRestTitle')}
             >
-              + Rest
+              {t('addRest')}
             </button>
             <button
               onClick={handleDeleteNote}
               className="px-4 py-1.5 bg-danger hover:opacity-90 text-white rounded font-medium text-sm transition"
-              title="Delete this note"
+              title={t('deleteNoteTitle')}
             >
-              Delete
+              {t('deleteNote')}
             </button>
             <button
               onClick={handleVerify}
@@ -248,15 +208,15 @@ export const NoteToolbar: React.FC = () => {
                   ? 'bg-ink-soft/20 text-ink-soft cursor-not-allowed'
                   : 'bg-accent hover:bg-accent-hover text-white'
               }`}
-              title={notes.length === 0 ? 'No notes to verify' : 'Verify transcription with AI'}
+              title={notes.length === 0 ? t('noNotesToCheck') : t('checkTheoryTitle')}
             >
               {isVerifying ? (
                 <>
                   <span className="animate-spin">⟳</span>
-                  Verifying...
+                  {t('checking')}
                 </>
               ) : (
-                'Verify with AI'
+                t('checkTheory')
               )}
             </button>
           </div>
@@ -264,9 +224,9 @@ export const NoteToolbar: React.FC = () => {
           {/* Info */}
           <div className="mt-3 text-xs text-ink-soft bg-paper rounded px-2 py-1">
             <p>
-              Confidence: {(selectedNote.confidence * 100).toFixed(0)}% |
-              Velocity: {selectedNote.velocity} |
-              Start: {selectedNote.startBeat.toFixed(2)} beat
+              {t('confidence')}: {(selectedNote.confidence * 100).toFixed(0)}% |{' '}
+              {t('velocity')}: {selectedNote.velocity} |{' '}
+              {t('startBeat')}: {selectedNote.startBeat.toFixed(2)} ({t('beat')})
             </p>
           </div>
 

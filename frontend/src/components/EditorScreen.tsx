@@ -5,10 +5,17 @@ import { NoteToolbar } from './NotationEditor/NoteToolbar';
 import { PlaybackControls } from './Playback/PlaybackControls';
 import { ExportButton } from './ExportButton';
 import { WaveformDisplay } from './WaveformDisplay';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { ShortcutHelp } from './ShortcutHelp';
 import { useProjectStore } from '../store/projectStore';
+import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
+import { clearAutosave } from '../services/autosave';
+import { useT, instrumentLabel } from '../i18n';
 
 export const EditorScreen: React.FC = () => {
   const [showWaveform, setShowWaveform] = useState(true);
+  const t = useT();
+  const { helpVisible, setHelpVisible } = useKeyboardEditing();
   const {
     notes,
     metadata,
@@ -42,14 +49,16 @@ export const EditorScreen: React.FC = () => {
     setNotes([]);
     setMetadata(null);
     setAudioFileId(null);
+    clearAutosave();
   };
 
   const chips = metadata
-    ? [metadata.instrument, `♩ = ${metadata.tempo}`, metadata.key, metadata.timeSignature]
+    ? [instrumentLabel(metadata.instrument, t), `♩ = ${metadata.tempo}`, metadata.key, metadata.timeSignature]
     : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">
+      <ShortcutHelp visible={helpVisible} onClose={() => setHelpVisible(false)} />
       {/* Top bar: title, metadata chips, project actions */}
       <header className="sticky top-0 z-30 border-b border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
@@ -57,8 +66,8 @@ export const EditorScreen: React.FC = () => {
           <input
             value={metadata?.title ?? ''}
             onChange={(e) => metadata && setMetadata({ ...metadata, title: e.target.value })}
-            aria-label="Project title"
-            placeholder="Untitled"
+            aria-label={t('projectTitle')}
+            placeholder={t('untitled')}
             className="input-field w-52 font-heading"
           />
           <div className="flex items-center gap-1.5">
@@ -72,17 +81,25 @@ export const EditorScreen: React.FC = () => {
             ))}
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <button onClick={undo} disabled={!canUndo()} title="Undo (Ctrl+Z)" className="btn-ghost">
-              ↩ Undo
+            <button onClick={undo} disabled={!canUndo()} title={t('undoTitle')} className="btn-ghost">
+              ↩ {t('undo')}
             </button>
-            <button onClick={redo} disabled={!canRedo()} title="Redo (Ctrl+Shift+Z)" className="btn-ghost">
-              ↪ Redo
+            <button onClick={redo} disabled={!canRedo()} title={t('redoTitle')} className="btn-ghost">
+              ↪ {t('redo')}
             </button>
             <Toolbar />
             <ExportButton />
-            <button onClick={handleNewTranscription} title="Start a new transcription" className="btn-ghost">
-              New
+            <button onClick={handleNewTranscription} title={t('newProjectTitle')} className="btn-ghost">
+              {t('newProject')}
             </button>
+            <button
+              onClick={() => setHelpVisible(true)}
+              title={t('shortcutsHintTitle')}
+              className="btn-ghost"
+            >
+              ?
+            </button>
+            <LanguageSwitcher />
           </div>
         </div>
       </header>
@@ -104,10 +121,10 @@ export const EditorScreen: React.FC = () => {
         <div className="mt-4">
           <button
             onClick={() => setShowWaveform((v) => !v)}
-            title="Toggle waveform display"
+            title={t('waveformToggleTitle')}
             className={`btn-ghost text-xs ${showWaveform ? 'bg-paper-dark text-ink' : ''}`}
           >
-            〰 Waveform
+            〰 {t('waveform')}
           </button>
           {showWaveform && (
             <div className="mt-2">

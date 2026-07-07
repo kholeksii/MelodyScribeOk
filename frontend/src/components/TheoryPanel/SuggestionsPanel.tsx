@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Correction } from '../../types';
 import { useProjectStore } from '../../store/projectStore';
+import { useT } from '../../i18n';
 
 interface SuggestionsPanelProps {
   corrections: Correction[];
@@ -16,6 +17,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   const notes = useProjectStore((state) => state.notes);
   const updateNote = useProjectStore((state) => state.updateNote);
   const clearCorrections = useProjectStore((state) => state.clearCorrections);
+  const t = useT();
 
   // Track which corrections have been accepted/rejected
   const [processedIndices, setProcessedIndices] = React.useState<Set<number>>(
@@ -71,12 +73,12 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
     <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-300 rounded-lg p-4 mt-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-amber-900">
-          🎼 Theory Verification Results
+          🎼 {t('theoryResults')}
         </h3>
         <button
           onClick={handleClose}
           className="text-amber-600 hover:text-amber-800 text-xl font-bold"
-          title="Close panel"
+          title={t('closePanel')}
         >
           ✕
         </button>
@@ -86,7 +88,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       <div className="mb-3 p-2 bg-white rounded border border-amber-200">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-amber-900">
-            Verification Confidence:
+            {t('theoryConfidence')}
           </span>
           <div className="flex items-center gap-2">
             <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -114,7 +116,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
           onClick={handleAcceptAll}
           className="w-full mb-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded transition"
         >
-          ✅ Accept All ({pendingCorrections.length})
+          ✅ {t('acceptAll', { n: pendingCorrections.length })}
         </button>
       )}
 
@@ -135,11 +137,14 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
             >
               <div className="mb-2">
                 <p className="text-sm font-semibold text-amber-900">
-                  Note #{correction.noteIndex + 1}
+                  {t('noteNumber', { n: correction.noteIndex + 1 })}
                   {note && ` (${note.pitch})`}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
-                  Change <span className="font-bold">{correction.field}</span>:{' '}
+                  {t('changeField')}{' '}
+                  <span className="font-bold">
+                    {correction.field === 'pitch' ? t('fieldPitch') : t('fieldDuration')}
+                  </span>:{' '}
                   <span className="line-through text-red-600">
                     {correction.oldValue}
                   </span>
@@ -160,20 +165,20 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                     onClick={() => handleAccept(idx, correction)}
                     className="flex-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded transition"
                   >
-                    ✅ Accept
+                    ✅ {t('accept')}
                   </button>
                   <button
                     onClick={() => handleReject(idx)}
                     className="flex-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded transition"
                   >
-                    ❌ Reject
+                    ❌ {t('reject')}
                   </button>
                 </div>
               )}
 
               {isProcessed && (
                 <p className="text-xs text-gray-500 font-semibold">
-                  {processedIndices.has(idx) ? '✓ Processed' : ''}
+                  {processedIndices.has(idx) ? `✓ ${t('processed')}` : ''}
                 </p>
               )}
             </div>
@@ -184,7 +189,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       {/* Stats */}
       <div className="mt-3 p-2 bg-white rounded border border-amber-200 text-xs text-gray-600">
         <p>
-          Processed: {processedIndices.size} / {corrections.length}
+          {t('processedCount', { done: processedIndices.size, total: corrections.length })}
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
@@ -8,17 +8,14 @@ import { useProjectStore } from './store/projectStore';
 import { useRecentProjectsStore } from './store/recentProjectsStore';
 import { useToast } from './components/Toast';
 import { Tour } from './components/Tour';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { RecoveryBanner } from './components/RecoveryBanner';
 import { apiClient } from './services/apiClient';
+import { startAutosave } from './services/autosave';
+import { relativeTime } from './utils/relativeTime';
+import { useT, localizeError, instrumentLabel } from './i18n';
+import { useUiStore } from './store/uiStore';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
-
-function relativeTime(ts: number): string {
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-  const diffMs = ts - Date.now();
-  const diffDays = Math.round(diffMs / 86400000);
-  if (Math.abs(diffDays) < 1) return 'today';
-  if (Math.abs(diffDays) < 7) return rtf.format(diffDays, 'day');
-  return rtf.format(Math.round(diffDays / 7), 'week');
-}
 
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('violin');
@@ -28,6 +25,8 @@ function App() {
   const [optKey, setOptKey] = useState('');
   const recents = useRecentProjectsStore((s) => s.recents);
   const { showToast } = useToast();
+  const t = useT();
+  const language = useUiStore((s) => s.language);
 
   const {
     notes,
@@ -39,6 +38,9 @@ function App() {
     setLoading,
     setError,
   } = useProjectStore();
+
+  // Autosave the working session 2s after any notes/metadata change (U19)
+  useEffect(() => startAutosave(), []);
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
@@ -60,14 +62,14 @@ function App() {
       const result: TranscriptionData = await apiClient.transcribe(audioFileId, instrument, options);
       setNotes(result.notes);
       setMetadata({
-        title: `Transcription - ${instrument}`,
+        title: `${t('transcription')} — ${instrumentLabel(instrument, t)}`,
         instrument,
         tempo: result.tempo,
         timeSignature: result.timeSignature,
         key: result.key,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Transcription failed';
+      const msg = localizeError(err, t) || t('transcriptionFailed');
       setError(msg);
       showToast(msg, 'error');
     } finally {
@@ -94,7 +96,10 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
-            <Toolbar />
+            <div className="flex items-center gap-3">
+              <Toolbar />
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </header>
@@ -102,18 +107,19 @@ function App() {
       {/* Upload screen */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
+          <RecoveryBanner />
           {recents.length > 0 && (
             <div className="mb-6 text-left max-w-md mx-auto">
-              <p className="text-sm font-semibold text-ink mb-2">Recent projects</p>
+              <p className="text-sm font-semibold text-ink mb-2">{t('recentProjects')}</p>
               <ul className="space-y-1">
                 {recents.map((r) => (
                   <li key={r.name + r.savedAt} className="flex justify-between text-sm text-ink-soft border-b border-ink-soft/10 pb-1">
                     <span className="truncate">{r.name}</span>
-                    <span className="ml-3 text-ink-soft/60 shrink-0">{relativeTime(r.savedAt)}</span>
+                    <span className="ml-3 text-ink-soft/60 shrink-0">{relativeTime(r.savedAt, language, t)}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-ink-soft/60 mt-1">Use "Open Project" to reopen a saved file.</p>
+              <p className="text-xs text-ink-soft/60 mt-1">{t('recentHint')}</p>
             </div>
           )}
           <FileUpload onUploadComplete={handleUploadComplete} />
@@ -133,7 +139,7 @@ function App() {
                 disabled={isTranscribing}
                 className="btn-primary px-6 py-3 text-base"
               >
-                {isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
+                {isTranscribing ? t('transcribing') : t('transcribe')}
               </button>
             )}
           </div>

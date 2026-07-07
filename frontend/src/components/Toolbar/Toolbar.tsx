@@ -1,9 +1,12 @@
 import React, { useRef } from 'react';
 import { useProjectStore } from '../../store/projectStore';
 import { saveProject, loadProject } from '../../services/projectFile';
+import { clearAutosave } from '../../services/autosave';
 import { Project } from '../../types';
+import { useT } from '../../i18n';
 
 export const Toolbar: React.FC = () => {
+  const t = useT();
   const notes = useProjectStore((s) => s.notes);
   const metadata = useProjectStore((s) => s.metadata);
   const audioBlob = useProjectStore((s) => s.audioBlob);
@@ -23,6 +26,8 @@ export const Toolbar: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    // Explicitly saved — the autosaved working copy is no longer needed
+    clearAutosave();
   };
 
   const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +37,7 @@ export const Toolbar: React.FC = () => {
       const { project, audioBlob: ab } = await loadProject(file);
       loadFromProject(project, ab);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to open project');
+      alert(err instanceof Error ? err.message : t('openFailed'));
     } finally {
       if (openFileRef.current) openFileRef.current.value = '';
     }
@@ -44,16 +49,16 @@ export const Toolbar: React.FC = () => {
         onClick={handleSave}
         disabled={!metadata || !notes.length}
         className="btn-secondary"
-        title="Save project as .melody file"
+        title={t('saveTitle')}
       >
-        Save
+        {t('save')}
       </button>
       <button
         onClick={() => openFileRef.current?.click()}
         className="btn-secondary"
-        title="Open a .melody project file"
+        title={t('openTitle')}
       >
-        Open
+        {t('open')}
       </button>
       <input
         ref={openFileRef}

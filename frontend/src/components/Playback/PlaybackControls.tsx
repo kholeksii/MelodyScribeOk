@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import * as Tone from 'tone';
 import { useProjectStore } from '../../store/projectStore';
 import { usePlayback } from '../../hooks/usePlayback';
+import { useT } from '../../i18n';
 
 interface PlaybackControlsProps {
   bpm?: number;
@@ -13,6 +14,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
     usePlayback({ bpm, volume: -12 });
 
   const [bpmInputValue, setBpmInputValue] = useState(String(currentBpm));
+  const t = useT();
 
   useEffect(() => {
     setBpmInputValue(String(currentBpm));
@@ -37,6 +39,33 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
   const handleStop = () => {
     stop();
   };
+
+  // Space = play/stop (U18); guarded against inputs, buttons and page scroll
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.tagName === 'BUTTON' ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      if (isPlaying) {
+        stop();
+      } else {
+        handlePlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlePlay closes over notes/bpm; rebind on playback state
+  }, [isPlaying, hasNotes, currentBpm, notes]);
 
   const handleBpmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -66,28 +95,28 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
         onClick={handlePlay}
         disabled={isPlaying || !hasNotes}
         className="btn-primary"
-        title={hasNotes ? 'Play transcription' : 'No playable notes'}
+        title={hasNotes ? t('playTitle') : t('noPlayableNotes')}
       >
-        ▶ Play
+        ▶ {t('play')}
       </button>
       <button
         onClick={handleStop}
         disabled={!isPlaying}
         className="btn-secondary"
-        title="Stop playback"
+        title={t('stopTitle')}
       >
-        ⏹ Stop
+        ⏹ {t('stop')}
       </button>
 
       {/* Status */}
       {isPlaying ? (
         <span className="flex items-center gap-2 text-sm font-medium text-valid">
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-valid" />
-          Playing
+          {t('playing')}
         </span>
       ) : (
         <span className="text-sm text-ink-soft">
-          {hasNotes ? `${playableNotes.length} note${playableNotes.length !== 1 ? 's' : ''}` : 'No notes'}
+          {hasNotes ? t('notesCount', { n: playableNotes.length }) : t('noNotes')}
         </span>
       )}
 
@@ -97,9 +126,9 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
           onClick={toggleMetronome}
           disabled={!isPlaying}
           className={isMetronomeEnabled ? 'btn-primary' : 'btn-secondary'}
-          title={isPlaying ? 'Toggle metronome' : 'Start playback to enable metronome'}
+          title={isPlaying ? t('metronomeTitle') : t('metronomeDisabledTitle')}
         >
-          {isMetronomeEnabled ? '🔊' : '🔇'} Metronome
+          {isMetronomeEnabled ? '🔊' : '🔇'} {t('metronome')}
         </button>
         <label htmlFor="bpm-input" className="text-sm font-medium text-ink-soft">
           BPM
@@ -114,7 +143,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({ bpm = 120 })
           onBlur={commitBpm}
           onKeyDown={(e) => e.key === 'Enter' && commitBpm()}
           className="input-field w-16 text-center font-semibold text-accent"
-          title="Tempo (40-300 BPM)"
+          title={t('bpmTitle')}
         />
       </div>
     </div>
