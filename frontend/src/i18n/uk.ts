@@ -82,6 +82,7 @@ export const uk = {
   waveformToggleTitle: 'Показати/сховати хвилю',
   noteOnset: 'Початок ноти',
   playing: 'Грає',
+  playhead: 'Курсор (клік — перемотка)',
 
   // Панель ноти
   octave: 'Октава',

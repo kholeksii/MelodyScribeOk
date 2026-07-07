@@ -1,4 +1,7 @@
-// Shared pitch/duration math for the note editor (NoteToolbar, keyboard editing).
+// Shared pitch/duration math for the note editor (NoteToolbar, keyboard
+// editing, waveform interactivity).
+
+import { NoteData } from '../types';
 
 const PITCH_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -94,4 +97,25 @@ const DURATION_BEATS: Record<string, number> = {
 /** Duration name → beats in 4/4; unknown values count as one beat. */
 export function durationToBeats(duration: string): number {
   return DURATION_BEATS[duration] ?? 1;
+}
+
+/** The note (or rest) whose time range contains timeSec, given the tempo. */
+export function noteAtTime(notes: NoteData[], tempo: number, timeSec: number): NoteData | null {
+  if (tempo <= 0) return null;
+  const secsPerBeat = 60 / tempo;
+  return (
+    notes.find((n) => {
+      const start = n.startBeat * secsPerBeat;
+      return timeSec >= start && timeSec < start + durationToBeats(n.duration) * secsPerBeat;
+    }) ?? null
+  );
+}
+
+/** Seconds → "mm:ss.mmm" timecode (clamped at zero). */
+export function formatTimecode(seconds: number): string {
+  const total = Math.max(0, seconds);
+  const m = Math.floor(total / 60);
+  const s = Math.floor(total % 60);
+  const ms = Math.floor((total % 1) * 1000);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
 }

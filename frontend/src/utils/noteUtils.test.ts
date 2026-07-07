@@ -6,7 +6,10 @@ import {
   transposeOctaves,
   toggleDotted,
   durationToBeats,
+  noteAtTime,
+  formatTimecode,
 } from './noteUtils';
+import { NoteData } from '../types';
 
 describe('parsePitch', () => {
   it('parses natural, sharp and flat pitches', () => {
@@ -79,5 +82,43 @@ describe('durationToBeats', () => {
     expect(durationToBeats('whole')).toBe(4);
     expect(durationToBeats('quarter.')).toBe(1.5);
     expect(durationToBeats('unknown')).toBe(1);
+  });
+});
+
+describe('noteAtTime', () => {
+  const note = (id: string, startBeat: number, duration: string): NoteData => ({
+    id,
+    pitch: 'G4',
+    duration,
+    startBeat,
+    measure: 1,
+    velocity: 80,
+    confidence: 1,
+    theoryCorrected: false,
+  });
+  // 120 BPM → 0.5 s per beat: a=0–0.5s, b=0.5–1.5s
+  const notes = [note('a', 0, 'quarter'), note('b', 1, 'half')];
+
+  it('finds the note containing the time', () => {
+    expect(noteAtTime(notes, 120, 0.25)?.id).toBe('a');
+    expect(noteAtTime(notes, 120, 0.75)?.id).toBe('b');
+  });
+
+  it('treats range ends as half-open', () => {
+    expect(noteAtTime(notes, 120, 0.5)?.id).toBe('b');
+    expect(noteAtTime(notes, 120, 1.5)).toBeNull();
+  });
+
+  it('returns null outside any note and for a broken tempo', () => {
+    expect(noteAtTime(notes, 120, 99)).toBeNull();
+    expect(noteAtTime(notes, 0, 0.25)).toBeNull();
+  });
+});
+
+describe('formatTimecode', () => {
+  it('formats mm:ss.mmm', () => {
+    expect(formatTimecode(0)).toBe('00:00.000');
+    expect(formatTimecode(65.432)).toBe('01:05.432');
+    expect(formatTimecode(-1)).toBe('00:00.000');
   });
 });
