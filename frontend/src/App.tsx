@@ -5,16 +5,14 @@ import { TranscribeOptions } from './components/AudioControls/TranscribeOptions'
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { EditorScreen } from './components/EditorScreen';
 import { useProjectStore } from './store/projectStore';
-import { useRecentProjectsStore } from './store/recentProjectsStore';
 import { useToast } from './components/Toast';
 import { Tour } from './components/Tour';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { RecoveryBanner } from './components/RecoveryBanner';
+import { RecentProjects } from './components/RecentProjects';
 import { apiClient } from './services/apiClient';
 import { startAutosave } from './services/autosave';
-import { relativeTime } from './utils/relativeTime';
 import { useT, localizeError, instrumentLabel } from './i18n';
-import { useUiStore } from './store/uiStore';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
 
 function App() {
@@ -23,10 +21,8 @@ function App() {
   const [optBpm, setOptBpm] = useState('');
   const [optTimeSignature, setOptTimeSignature] = useState('4/4');
   const [optKey, setOptKey] = useState('');
-  const recents = useRecentProjectsStore((s) => s.recents);
   const { showToast } = useToast();
   const t = useT();
-  const language = useUiStore((s) => s.language);
 
   const {
     notes,
@@ -108,20 +104,7 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
           <RecoveryBanner />
-          {recents.length > 0 && (
-            <div className="mb-6 text-left max-w-md mx-auto">
-              <p className="text-sm font-semibold text-ink mb-2">{t('recentProjects')}</p>
-              <ul className="space-y-1">
-                {recents.map((r) => (
-                  <li key={r.name + r.savedAt} className="flex justify-between text-sm text-ink-soft border-b border-ink-soft/10 pb-1">
-                    <span className="truncate">{r.name}</span>
-                    <span className="ml-3 text-ink-soft/60 shrink-0">{relativeTime(r.savedAt, language, t)}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-ink-soft/60 mt-1">{t('recentHint')}</p>
-            </div>
-          )}
+          <RecentProjects />
           <FileUpload onUploadComplete={handleUploadComplete} />
           <div className="mt-6 flex flex-col items-center gap-4">
             <InstrumentSelector value={instrument} onChange={setInstrument} />

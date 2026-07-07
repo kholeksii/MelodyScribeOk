@@ -161,6 +161,10 @@ export const uk = {
   errNetwork: 'Немає з’єднання з сервером. Чи запущений бекенд?',
   errUnknown: 'Невідома помилка',
 
+  // Останні проєкти (U20)
+  fileNotFound: 'Файл не знайдено — прибрано зі списку останніх.',
+  openRecentTitle: 'Відкрити {name}',
+
   // Відновлення сесії (U19)
   recoveryPrompt: 'Відновити останню сесію?',
   recoveryDetail: '{title} — нот: {notes}, збережено {when}',
