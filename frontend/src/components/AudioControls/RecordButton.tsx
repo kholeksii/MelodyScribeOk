@@ -39,17 +39,17 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
         disabled={state === 'processing'}
         className={`px-5 py-2.5 rounded-full font-medium text-sm transition-all ${
           state === 'recording'
-            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+            ? 'bg-danger hover:opacity-90 text-white animate-pulse'
             : state === 'processing'
-              ? 'bg-gray-400 text-white cursor-not-allowed'
-              : 'bg-gray-600 hover:bg-gray-700 text-white'
+              ? 'bg-ink-soft/50 text-white cursor-not-allowed'
+              : 'bg-ink-soft hover:opacity-90 text-white'
         }`}
       >
         {state === 'idle' && t('record')}
         {state === 'recording' && t('recordingStop', { s: elapsedSec })}
         {state === 'processing' && t('processing')}
       </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );
 };

@@ -8,10 +8,12 @@ import { useProjectStore } from './store/projectStore';
 import { useToast } from './components/Toast';
 import { Tour } from './components/Tour';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { ThemeToggle } from './components/ThemeToggle';
 import { RecoveryBanner } from './components/RecoveryBanner';
 import { RecentProjects } from './components/RecentProjects';
 import { apiClient } from './services/apiClient';
 import { startAutosave } from './services/autosave';
+import { useApplyTheme } from './hooks/useTheme';
 import { useT, localizeError, instrumentLabel } from './i18n';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
 
@@ -37,6 +39,9 @@ function App() {
 
   // Autosave the working session 2s after any notes/metadata change (U19)
   useEffect(() => startAutosave(), []);
+
+  // Dark mode: keep the .dark class on <html> in sync (U22)
+  useApplyTheme();
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
@@ -94,6 +99,7 @@ function App() {
             <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
             <div className="flex items-center gap-3">
               <Toolbar />
+              <ThemeToggle />
               <LanguageSwitcher />
             </div>
           </div>

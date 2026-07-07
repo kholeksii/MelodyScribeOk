@@ -28,9 +28,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const colorMap: Record<ToastType, string> = {
-    info: 'bg-gray-800 text-white',
-    success: 'bg-green-600 text-white',
-    error: 'bg-red-600 text-white',
+    info: 'bg-ink text-paper',
+    success: 'bg-valid text-white',
+    error: 'bg-danger text-white',
   };
 
   return (

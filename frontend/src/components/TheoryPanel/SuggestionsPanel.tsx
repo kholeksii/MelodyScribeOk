@@ -70,14 +70,14 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-300 rounded-lg p-4 mt-4">
+    <div className="bg-warn/10 border border-warn/30 rounded-lg p-4 mt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold text-amber-900">
+        <h3 className="text-lg font-bold text-ink">
           🎼 {t('theoryResults')}
         </h3>
         <button
           onClick={handleClose}
-          className="text-amber-600 hover:text-amber-800 text-xl font-bold"
+          className="text-ink-soft hover:text-ink text-xl font-bold"
           title={t('closePanel')}
         >
           ✕
@@ -85,25 +85,25 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       </div>
 
       {/* Confidence Score */}
-      <div className="mb-3 p-2 bg-white rounded border border-amber-200">
+      <div className="mb-3 p-2 bg-surface rounded border border-warn/30">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-amber-900">
+          <span className="text-sm font-semibold text-ink">
             {t('theoryConfidence')}
           </span>
           <div className="flex items-center gap-2">
-            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-32 h-2 bg-paper-dark rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${
                   confidence > 0.75
-                    ? 'bg-green-500'
+                    ? 'bg-valid'
                     : confidence > 0.5
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
+                    ? 'bg-warn'
+                    : 'bg-danger'
                 }`}
                 style={{ width: `${confidence * 100}%` }}
               />
             </div>
-            <span className="text-sm font-bold text-amber-900">
+            <span className="text-sm font-bold text-ink">
               {(confidence * 100).toFixed(0)}%
             </span>
           </div>
@@ -114,7 +114,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       {pendingCorrections.length > 0 && (
         <button
           onClick={handleAcceptAll}
-          className="w-full mb-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded transition"
+          className="w-full mb-3 px-4 py-2 bg-valid hover:opacity-90 text-white font-semibold rounded transition"
         >
           ✅ {t('acceptAll', { n: pendingCorrections.length })}
         </button>
@@ -131,29 +131,29 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
               key={idx}
               className={`p-3 rounded border transition ${
                 isProcessed
-                  ? 'bg-gray-100 border-gray-300 opacity-60'
-                  : 'bg-white border-amber-300 hover:border-amber-500'
+                  ? 'bg-paper-dark border-ink-soft/30 opacity-60'
+                  : 'bg-surface border-warn/40 hover:border-warn'
               }`}
             >
               <div className="mb-2">
-                <p className="text-sm font-semibold text-amber-900">
+                <p className="text-sm font-semibold text-ink">
                   {t('noteNumber', { n: correction.noteIndex + 1 })}
                   {note && ` (${note.pitch})`}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-ink-soft mt-1">
                   {t('changeField')}{' '}
                   <span className="font-bold">
                     {correction.field === 'pitch' ? t('fieldPitch') : t('fieldDuration')}
                   </span>:{' '}
-                  <span className="line-through text-red-600">
+                  <span className="line-through text-danger">
                     {correction.oldValue}
                   </span>
                   {' → '}
-                  <span className="text-green-600 font-bold">
+                  <span className="text-valid font-bold">
                     {correction.newValue}
                   </span>
                 </p>
-                <p className="text-xs text-amber-700 mt-1 italic">
+                <p className="text-xs text-warn mt-1 italic">
                   💡 {correction.reason}
                 </p>
               </div>
@@ -163,13 +163,13 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAccept(idx, correction)}
-                    className="flex-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded transition"
+                    className="flex-1 px-3 py-1.5 bg-valid hover:opacity-90 text-white text-sm font-semibold rounded transition"
                   >
                     ✅ {t('accept')}
                   </button>
                   <button
                     onClick={() => handleReject(idx)}
-                    className="flex-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded transition"
+                    className="flex-1 px-3 py-1.5 bg-danger hover:opacity-90 text-white text-sm font-semibold rounded transition"
                   >
                     ❌ {t('reject')}
                   </button>
@@ -177,7 +177,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
               )}
 
               {isProcessed && (
-                <p className="text-xs text-gray-500 font-semibold">
+                <p className="text-xs text-ink-soft font-semibold">
                   {processedIndices.has(idx) ? `✓ ${t('processed')}` : ''}
                 </p>
               )}
@@ -187,7 +187,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       </div>
 
       {/* Stats */}
-      <div className="mt-3 p-2 bg-white rounded border border-amber-200 text-xs text-gray-600">
+      <div className="mt-3 p-2 bg-surface rounded border border-warn/30 text-xs text-ink-soft">
         <p>
           {t('processedCount', { done: processedIndices.size, total: corrections.length })}
         </p>

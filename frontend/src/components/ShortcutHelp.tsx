@@ -34,7 +34,7 @@ export const ShortcutHelp: React.FC<ShortcutHelpProps> = ({ visible, onClose }) 
       <div
         role="dialog"
         aria-label={t('shortcutsTitle')}
-        className="w-full max-w-md rounded-lg border border-ink-soft/15 bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-lg border border-ink-soft/15 bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

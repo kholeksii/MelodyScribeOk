@@ -11,6 +11,15 @@ export interface RenderListeners {
   onMouseMove: (e: MouseEvent) => void;
 }
 
+// Multi-system layout: measures wrap into lines so long scores stack
+// vertically (readable on screen and paginatable in the PDF export)
+const MEASURES_PER_LINE = 4;
+const LINE_HEIGHT = 150;
+const STAVE_X = 10;
+const STAVE_Y0 = 40;
+const STAVE_W = 1100;
+const FORMAT_W = 950;
+
 /** Draw the score into `container` (imperative VexFlow API, dynamic import
  * to avoid SSR issues). Returns the created SVG element, with the given
  * listeners attached, or null when rendering failed. */
@@ -44,7 +53,7 @@ export async function renderScore(
       Tuplet?: new (notes: Tickable[]) => {
         setContext: (ctx: unknown) => { draw: () => void };
       };
-      StaveTie?: new (opts: { first_note: Tickable; last_note: Tickable }) => {
+      StaveTie?: new (opts: { first_note?: Tickable; last_note?: Tickable }) => {
         setContext: (ctx: unknown) => { draw: () => void };
       };
     };
@@ -57,8 +66,15 @@ export async function renderScore(
     svgWrapper.style.position = 'relative';
     container.appendChild(svgWrapper);
 
+    const measures = groupNotesByMeasure(notes);
+    const lines: NoteData[][][] = [];
+    for (let i = 0; i < measures.length; i += MEASURES_PER_LINE) {
+      lines.push(measures.slice(i, i + MEASURES_PER_LINE));
+    }
+    if (lines.length === 0) lines.push([]);
+
     const renderer = new Renderer(svgWrapper, Renderer.Backends.SVG);
-    renderer.resize(1200, 250);
+    renderer.resize(1200, STAVE_Y0 + lines.length * LINE_HEIGHT + 30);
     const context = renderer.getContext();
 
     const svg = svgWrapper.querySelector('svg');
@@ -68,16 +84,7 @@ export async function renderScore(
       svg.style.cursor = 'default';
     }
 
-    const stave = new Stave(10, 40, 1100);
-    stave.addClef('treble');
-    stave.addTimeSignature(timeSignature);
-
     const vexKeySignature = convertKeySignatureToVexFlow(keySignature);
-    if (vexKeySignature) {
-      stave.addKeySignature(vexKeySignature);
-    }
-
-    stave.setContext(context).draw();
 
     // Helper: convert a single NoteData to a VexFlow tickable
     const makeVexNote = (note: NoteData, idx: number): TaggedTickable => {
@@ -119,24 +126,42 @@ export async function renderScore(
       return applyDots(vexNote);
     };
 
-    // Group notes by measure, insert BarNote between measure groups.
-    // Collect triplet groups and tie pairs for drawing after the voice.
-    const allTickables: Tickable[] = [];
-    const noteTickables: { data: NoteData; tickable: TaggedTickable }[] = [];
+    // One stave (system) per line of measures; BarNote between measures
+    // within a line. noteTickables keeps global note order for hit-testing,
+    // triplets and ties.
+    const noteTickables: { data: NoteData; tickable: TaggedTickable; line: number }[] = [];
     let globalIdx = 0;
-    groupNotesByMeasure(notes).forEach((measureNotes, measureIdx) => {
-      if (measureIdx > 0 && BarNote) {
-        try {
-          allTickables.push(new BarNote());
-        } catch (e) {
-          console.warn('BarNote failed:', e);
+    lines.forEach((lineMeasures, lineIdx) => {
+      const stave = new Stave(STAVE_X, STAVE_Y0 + lineIdx * LINE_HEIGHT, STAVE_W);
+      stave.addClef('treble');
+      if (lineIdx === 0) stave.addTimeSignature(timeSignature);
+      if (vexKeySignature) stave.addKeySignature(vexKeySignature);
+      stave.setContext(context).draw();
+
+      const lineTickables: Tickable[] = [];
+      lineMeasures.forEach((measureNotes, measureIdx) => {
+        if (measureIdx > 0 && BarNote) {
+          try {
+            lineTickables.push(new BarNote());
+          } catch (e) {
+            console.warn('BarNote failed:', e);
+          }
         }
-      }
-      measureNotes.forEach((note) => {
-        const tickable = makeVexNote(note, globalIdx++);
-        allTickables.push(tickable);
-        noteTickables.push({ data: note, tickable });
+        measureNotes.forEach((note) => {
+          const tickable = makeVexNote(note, globalIdx++);
+          lineTickables.push(tickable);
+          noteTickables.push({ data: note, tickable, line: lineIdx });
+        });
       });
+      if (lineTickables.length === 0) return;
+
+      const voice = new Voice();
+      voice.setStrict(false);
+      voice.addTickables(lineTickables);
+      // Short last lines take proportionally less width instead of stretching
+      const width = Math.max(200, (FORMAT_W * lineMeasures.length) / MEASURES_PER_LINE);
+      new Formatter().joinVoices([voice]).format([voice], width);
+      voice.draw(context, stave);
     });
 
     const tripletGroups: Tickable[][] = [];
@@ -152,15 +177,6 @@ export async function renderScore(
         currentTriplet = [];
       }
     });
-
-    // Create voice WITHOUT strict beat requirement
-    const voice = new Voice();
-    voice.setStrict(false);
-    voice.addTickables(allTickables);
-
-    const formatter = new Formatter();
-    formatter.joinVoices([voice]).format([voice], 900);
-    voice.draw(context, stave);
 
     if (flowExtras.Tuplet) {
       for (const group of tripletGroups) {
@@ -178,12 +194,22 @@ export async function renderScore(
         const next = noteTickables[i + 1];
         if (current.data.tieStart && next.data.tieEnd) {
           try {
-            new flowExtras.StaveTie({
-              first_note: current.tickable,
-              last_note: next.tickable,
-            })
-              .setContext(context)
-              .draw();
+            if (current.line === next.line) {
+              new flowExtras.StaveTie({
+                first_note: current.tickable,
+                last_note: next.tickable,
+              })
+                .setContext(context)
+                .draw();
+            } else {
+              // Tie across a line break: draw two hanging halves
+              new flowExtras.StaveTie({ first_note: current.tickable })
+                .setContext(context)
+                .draw();
+              new flowExtras.StaveTie({ last_note: next.tickable })
+                .setContext(context)
+                .draw();
+            }
           } catch (e) {
             console.warn('StaveTie draw failed:', e);
           }

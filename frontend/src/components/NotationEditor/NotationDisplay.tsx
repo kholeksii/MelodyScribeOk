@@ -33,10 +33,11 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
       <div className="mb-2 text-sm text-ink-soft">
         {t('time')}: {timeSignature} | {t('key')}: {keySignature}
       </div>
-      <div className="border border-ink-soft/15 rounded-lg p-4 bg-white min-h-48 overflow-x-auto">
+      {/* The sheet is always light (print-like), so text inside uses fixed ink colors */}
+      <div className="border border-ink-soft/15 rounded-lg p-4 bg-sheet min-h-48 overflow-x-auto">
         <div ref={containerRef} className="w-full" />
         {notes.length > 0 && (
-          <div className="mt-4 text-xs text-ink-soft">
+          <div className="mt-4 text-xs text-[#6B675E]">
             <p className="font-semibold mb-1">{t('notesLoaded')}</p>
             <ul>
               {notes.slice(0, 3).map((note) => (
@@ -44,8 +45,8 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
                   key={note.id}
                   className={`cursor-pointer py-1 px-2 rounded ${
                     selectedNoteId === note.id
-                      ? 'bg-accent/10 text-ink'
-                      : 'hover:bg-paper-dark'
+                      ? 'bg-accent/10 text-[#2B2A26]'
+                      : 'hover:bg-[#F3EDE2]'
                   }`}
                   onClick={() => setSelectedNote(note.id)}
                 >
