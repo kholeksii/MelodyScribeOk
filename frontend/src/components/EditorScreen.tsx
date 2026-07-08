@@ -8,6 +8,7 @@ import { WaveformDisplay } from './WaveformDisplay';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { ShortcutHelp } from './ShortcutHelp';
+import { VersionBadge } from './VersionBadge';
 import { useProjectStore } from '../store/projectStore';
 import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
 import { clearAutosave } from '../services/autosave';
@@ -63,7 +64,10 @@ export const EditorScreen: React.FC = () => {
       {/* Top bar: title, metadata chips, project actions */}
       <header className="sticky top-0 z-30 border-b border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
-          <h1 className="shrink-0 text-xl font-bold text-ink">MelodyScribe</h1>
+          <div className="flex shrink-0 items-baseline gap-2">
+            <h1 className="text-xl font-bold text-ink">MelodyScribe</h1>
+            <VersionBadge />
+          </div>
           <input
             value={metadata?.title ?? ''}
             onChange={(e) => metadata && setMetadata({ ...metadata, title: e.target.value })}

@@ -11,6 +11,7 @@ import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeToggle } from './components/ThemeToggle';
 import { RecoveryBanner } from './components/RecoveryBanner';
 import { RecentProjects } from './components/RecentProjects';
+import { VersionBadge } from './components/VersionBadge';
 import { apiClient } from './services/apiClient';
 import { startAutosave } from './services/autosave';
 import { useApplyTheme } from './hooks/useTheme';
@@ -172,7 +173,10 @@ function App() {
       <header className="bg-paper-dark shadow-sm border-b border-ink-soft/15">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
+              <VersionBadge />
+            </div>
             <div className="flex items-center gap-3">
               <Toolbar />
               <ThemeToggle />
