@@ -78,9 +78,9 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 p-4 bg-paper-dark border border-ink-soft/15 rounded-lg">
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-purple-800">BPM:</label>
+        <label className="text-sm font-medium text-ink-soft">BPM:</label>
         <input
           type="number"
           value={bpm}
@@ -88,12 +88,12 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
           placeholder={t('auto')}
           min={40}
           max={300}
-          className="w-20 px-2 py-1.5 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+          className="w-20 px-2 py-1.5 text-sm border border-ink-soft/30 rounded focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
         />
         <button
           type="button"
           onClick={tap}
-          className="px-3 py-1.5 text-sm font-medium border border-purple-300 rounded bg-white hover:bg-purple-100 active:bg-purple-200 transition text-purple-700"
+          className="px-3 py-1.5 text-sm font-medium border border-ink-soft/30 rounded bg-surface hover:bg-paper-dark transition text-accent"
           title={t('tapHint')}
         >
           {tapCount === 0
@@ -105,11 +105,11 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-purple-800">{t('time')}:</label>
+        <label className="text-sm font-medium text-ink-soft">{t('time')}:</label>
         <select
           value={timeSignature}
           onChange={(e) => setTimeSignature(e.target.value)}
-          className="px-2 py-1.5 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+          className="px-2 py-1.5 text-sm border border-ink-soft/30 rounded focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
         >
           {TIME_SIGNATURES.map((ts) => (
             <option key={ts} value={ts}>{ts}</option>
@@ -118,11 +118,11 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-purple-800">{t('key')}:</label>
+        <label className="text-sm font-medium text-ink-soft">{t('key')}:</label>
         <select
           value={musicalKey}
           onChange={(e) => setMusicalKey(e.target.value)}
-          className="px-2 py-1.5 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+          className="px-2 py-1.5 text-sm border border-ink-soft/30 rounded focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
         >
           <option value="">{t('auto')}</option>
           {KEYS.map((k) => (

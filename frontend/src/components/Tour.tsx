@@ -47,26 +47,26 @@ export const Tour: React.FC = () => {
   return (
     <div className="fixed inset-0 z-40 pointer-events-none">
       <div
-        className="pointer-events-auto fixed bottom-8 left-1/2 -translate-x-1/2 bg-white border border-purple-300 rounded-xl shadow-xl p-5 max-w-sm w-full"
+        className="pointer-events-auto fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface border border-ink-soft/15 rounded-xl shadow-xl p-5 max-w-sm w-full"
         role="dialog"
         aria-label="Getting started tour"
       >
         <div className="flex justify-between items-start mb-2">
-          <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
+          <span className="text-xs font-semibold text-accent uppercase tracking-wide">
             {t('tourStep')} {currentStep + 1} / {STEPS.length}
           </span>
           <button
             onClick={skip}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            className="text-xs text-ink-soft/60 hover:text-ink-soft"
           >
             {t('tourSkip')}
           </button>
         </div>
-        <h3 className="font-bold text-gray-900 mb-1">{t(step.title)}</h3>
-        <p className="text-sm text-gray-600 mb-4">{t(step.body)}</p>
+        <h3 className="font-bold text-ink mb-1">{t(step.title)}</h3>
+        <p className="text-sm text-ink-soft mb-4">{t(step.body)}</p>
         <button
           onClick={next}
-          className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+          className="w-full py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-hover transition"
         >
           {currentStep >= STEPS.length - 1 ? t('tourStart') : t('tourNext')}
         </button>

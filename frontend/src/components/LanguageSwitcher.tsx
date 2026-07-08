@@ -20,7 +20,7 @@ export const LanguageSwitcher: React.FC = () => {
           className={`px-2 py-1 text-xs font-semibold transition ${
             language === lang
               ? 'bg-accent text-white'
-              : 'bg-white text-ink-soft hover:bg-paper-dark'
+              : 'bg-surface text-ink-soft hover:bg-paper-dark'
           }`}
         >
           {LABELS[lang]}

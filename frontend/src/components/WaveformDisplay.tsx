@@ -189,7 +189,7 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({ notes, tempo }
 
   return (
     <div className="w-full">
-      <div className="relative border border-ink-soft/15 rounded bg-white">
+      <div className="relative border border-ink-soft/15 rounded bg-sheet">
         <canvas
           ref={canvasRef}
           onClick={handleClick}

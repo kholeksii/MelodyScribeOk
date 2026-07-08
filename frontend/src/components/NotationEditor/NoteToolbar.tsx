@@ -111,20 +111,20 @@ export const NoteToolbar: React.FC = () => {
   };
 
   return (
-    <div className="rounded-lg border border-ink-soft/15 bg-white p-4 shadow-md">
+    <div className="rounded-lg border border-ink-soft/15 bg-surface p-4 shadow-md">
       {/* Octave section — always visible */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-medium text-ink-soft">{t('octave')}:</span>
         <button
           onClick={() => shiftAllOctaves(1)}
-          className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
+          className="px-3 py-1.5 bg-surface border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
           title={t('allUpTitle')}
         >
           ↑ {t('allUp')}
         </button>
         <button
           onClick={() => shiftAllOctaves(-1)}
-          className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
+          className="px-3 py-1.5 bg-surface border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent text-sm"
           title={t('allDownTitle')}
         >
           ↓ {t('allDown')}
@@ -145,7 +145,7 @@ export const NoteToolbar: React.FC = () => {
               <span className="text-xs font-medium text-ink-soft">{t('pitch')}:</span>
               <button
                 onClick={handlePitchDown}
-                className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
+                className="px-3 py-1.5 bg-surface border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
                 title={t('pitchDownTitle')}
               >
                 ▼
@@ -155,7 +155,7 @@ export const NoteToolbar: React.FC = () => {
               </span>
               <button
                 onClick={handlePitchUp}
-                className="px-3 py-1.5 bg-white border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
+                className="px-3 py-1.5 bg-surface border border-ink-soft/30 rounded hover:bg-paper-dark transition font-semibold text-accent"
                 title={t('pitchUpTitle')}
               >
                 ▲
@@ -174,7 +174,7 @@ export const NoteToolbar: React.FC = () => {
                   className={`px-3 py-1.5 rounded font-semibold transition ${
                     selectedNote.duration === duration
                       ? 'bg-accent text-white border border-accent'
-                      : 'bg-white text-accent border border-ink-soft/30 hover:bg-paper-dark'
+                      : 'bg-surface text-accent border border-ink-soft/30 hover:bg-paper-dark'
                   }`}
                   title={t('setDurationTitle', { d: durationLabel(duration, t) })}
                 >

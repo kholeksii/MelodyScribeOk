@@ -1,12 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
+import { useUiStore } from '../store/uiStore';
 import { apiClient } from '../services/apiClient';
-import jsPDF from 'jspdf';
-import { svg2pdf } from 'svg2pdf.js';
+import { exportScorePdf } from '../services/pdfExport';
 import { useT, localizeError } from '../i18n';
 
 export const ExportButton: React.FC = () => {
   const t = useT();
+  const language = useUiStore((s) => s.language);
   const notes = useProjectStore((state) => state.notes);
   const metadata = useProjectStore((state) => state.metadata);
   const setNotes = useProjectStore((state) => state.setNotes);
@@ -47,13 +48,7 @@ export const ExportButton: React.FC = () => {
         setError(t('svgNotFound'));
         return;
       }
-      const svgWidth = svgEl.viewBox?.baseVal?.width || svgEl.clientWidth || 800;
-      const svgHeight = svgEl.viewBox?.baseVal?.height || svgEl.clientHeight || 300;
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const scale = pageWidth / svgWidth;
-      doc.setFontSize(12);
-      await svg2pdf(svgEl, doc, { x: 0, y: 0, width: svgWidth * scale, height: svgHeight * scale });
+      const doc = await exportScorePdf(svgEl, metadata, t, language);
       doc.save(`${metadata.title.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       setError(localizeError(err, t) || t('pdfExportFailed'));
