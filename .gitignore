@@ -56,6 +56,8 @@ backend/uploads/
 *.m4a
 # ...except committed regression fixtures
 !backend/tests/fixtures/real/*.m4a
+# ...and the bundled demo melody shipped with the app (U23)
+!frontend/src/assets/demo-do-mi-re-do.wav
 
 # Node.js (for future frontend)
 node_modules/

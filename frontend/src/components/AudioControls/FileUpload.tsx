@@ -1,47 +1,17 @@
 import React, { useState, useCallback } from 'react';
-import { apiClient } from '../../services/apiClient';
 import { AudioInfo } from '../../types';
 import { RecordButton } from './RecordButton';
-import { useProjectStore } from '../../store/projectStore';
-import { useT, localizeError } from '../../i18n';
+import { useAudioUpload } from '../../hooks/useAudioUpload';
+import { useT } from '../../i18n';
 
 interface FileUploadProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const setAudioBlob = useProjectStore((state) => state.setAudioBlob);
+  const { handleFile, isUploading, error } = useAudioUpload(onUploadComplete);
   const t = useT();
-
-  const handleFile = useCallback(async (file: File) => {
-    // Validate file type
-    const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/flac', 'audio/ogg', 'audio/mp4', 'audio/x-m4a'];
-    const allowedExtensions = ['.wav', '.mp3', '.flac', '.ogg', '.m4a'];
-
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
-
-    if (!isValidType) {
-      setError(t('unsupportedFormat'));
-      return;
-    }
-
-    setIsUploading(true);
-    setError(null);
-
-    try {
-      const audioInfo = await apiClient.uploadAudio(file);
-      setAudioBlob(file);
-      onUploadComplete(audioInfo);
-    } catch (err) {
-      setError(localizeError(err, t) || t('uploadFailed'));
-    } finally {
-      setIsUploading(false);
-    }
-  }, [onUploadComplete, setAudioBlob, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
