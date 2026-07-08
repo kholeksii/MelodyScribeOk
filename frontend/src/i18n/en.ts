@@ -155,6 +155,9 @@ export const en = {
   tour3Title: 'Export your score',
   tour3Body: 'After transcribing, edit notes then export to PDF or MusicXML.',
 
+  // Version badge
+  version: 'Version',
+
   // Error boundary / API errors
   errTitle: 'Something went wrong',
   reload: 'Reload',
