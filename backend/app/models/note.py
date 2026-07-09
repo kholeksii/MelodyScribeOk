@@ -26,3 +26,5 @@ class TranscriptionData(BaseModel):
     key: str
     time_signature: str
     instrument: str
+    # None when the user supplied the meter explicitly (U31 auto-detection)
+    time_signature_confidence: float | None = None

@@ -111,6 +111,7 @@ export const TranscribeOptions: React.FC<TranscribeOptionsProps> = ({
           onChange={(e) => setTimeSignature(e.target.value)}
           className="px-2 py-1.5 text-sm border border-ink-soft/30 rounded focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
         >
+          <option value="">{t('auto')}</option>
           {TIME_SIGNATURES.map((ts) => (
             <option key={ts} value={ts}>{ts}</option>
           ))}

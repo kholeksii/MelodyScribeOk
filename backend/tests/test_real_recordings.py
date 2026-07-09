@@ -119,3 +119,43 @@ def test_key_detected_as_g_major(
 ) -> None:
     """Fixed in U30: circular Krumhansl rotation + notes/chroma score averaging."""
     assert transcriptions[instrument].key == ground_truth["key"]
+
+
+@pytest.mark.parametrize("instrument", ["piano", "violin"])
+def test_tempo_level_corrected_to_quarter_pulse(
+    transcriptions: dict, instrument: str
+) -> None:
+    """U31: the engine used to report 133 BPM (the eighth-note level, because
+    BPM_MIN made ~66 unreachable). The joint search must fold it back to the
+    notated quarter pulse."""
+    tempo = transcriptions[instrument].tempo
+    assert 55 <= tempo <= 85, f"{instrument}: tempo {tempo} is not the quarter pulse"
+
+
+@pytest.mark.xfail(
+    strict=False,
+    reason="2/4 vs 3/4-or-doubled-4/4 on heavy solo rubato is beyond the "
+    "symbolic accent features — timing drift flattens every grid-based "
+    "signal (bar-lag autocorrelation measured ~equal for bars 2/3/4). "
+    "Needs tempo-curve tracking: U31b learned downbeat model / U33 strict "
+    "ground truth.",
+)
+@pytest.mark.parametrize("instrument", ["piano", "violin"])
+def test_meter_detected_as_2_4(transcriptions: dict, instrument: str) -> None:
+    """The printed part is 2/4."""
+    result = transcriptions[instrument]
+    assert result.time_signature == "2/4", (
+        f"{instrument}: detected {result.time_signature} "
+        f"(confidence {result.time_signature_confidence})"
+    )
+
+
+@pytest.mark.parametrize("instrument", ["piano", "violin"])
+def test_no_cross_barline_tie_flood(transcriptions: dict, instrument: str) -> None:
+    """A wrong grid shreds notes at barlines; with the right meter the share
+    of tied notes must be small (the printed opening has no ties at all)."""
+    notes = transcriptions[instrument].notes
+    tied = sum(1 for n in notes if n.tie_start)
+    assert tied / max(len(notes), 1) <= 0.15, (
+        f"{instrument}: {tied}/{len(notes)} notes tied across barlines"
+    )

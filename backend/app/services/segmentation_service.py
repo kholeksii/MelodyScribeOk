@@ -2,6 +2,7 @@ import logging
 
 from ..core.audio_preprocess import preprocess
 from ..core.key_detector import KeyDetector
+from ..core.meter_detector import MeterDetector
 from ..core.onset_detector import OnsetDetector
 from ..core.pitch_detector import PitchDetector
 from ..core.pitch_postprocess import fold_octave_outliers
@@ -66,6 +67,7 @@ class SegmentationService:
         self.onset_detector = OnsetDetector()
         self.tempo_detector = TempoDetector()
         self.key_detector = KeyDetector()
+        self.meter_detector = MeterDetector()
         self.quantizer = Quantizer()
 
     def transcribe(
@@ -121,7 +123,27 @@ class SegmentationService:
             notes = self._segment_notes(onsets, pitches, tempo, audio, sr)
             logger.info(f"Segmented into {len(notes)} notes")
 
-            ts = time_signature or "4/4"
+            # Meter: trust the user's explicit choice; otherwise run the joint
+            # (meter × tempo-level × phase) search on the segmented notes (U31)
+            ts_confidence: float | None = None
+            if time_signature is not None:
+                ts = time_signature
+            else:
+                logger.info("Detecting meter (joint meter/level/phase search)...")
+                meter = self.meter_detector.detect(
+                    notes, allow_half_level=(bpm is None), bpm=int(tempo)
+                )
+                ts = meter.time_signature
+                ts_confidence = meter.confidence
+                if meter.level != 1.0 or meter.phase != 0.0:
+                    notes = self.meter_detector.apply(notes, meter)
+                    tempo = max(1, int(round(tempo * meter.level)))
+                logger.info(
+                    f"Detected meter: {ts} (level={meter.level}, "
+                    f"phase={meter.phase}, confidence={meter.confidence:.2f}, "
+                    f"tempo now {tempo})"
+                )
+
             logger.info("Quantizing notes...")
             notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
             logger.info(f"Quantized {len(notes)} notes")
@@ -179,6 +201,7 @@ class SegmentationService:
             tempo=int(tempo),
             key=str(detected_key),
             time_signature=ts,
+            time_signature_confidence=ts_confidence,
             instrument=instrument,
         )
         logger.info("Transcription completed successfully")
