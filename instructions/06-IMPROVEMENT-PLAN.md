@@ -642,6 +642,130 @@ Verify:
 
 ---
 
+# Phase U-E — Metric accuracy (meter, tempo level, anacrusis)
+
+> Goal: the score's barlines match the printed original. Found on the real
+> Que-Lindo comparison (2026-07): engine wrote 4/4 @ 133 BPM with the pickup on
+> a downbeat and ~4 invented cross-barline ties, while the printed part is
+> 2/4 @ ~66 with an eighth-note D4 anacrusis. Root causes in code: the frontend
+> always sends 4/4 (no meter detection exists), BPM_MIN=70 makes the true
+> quarter-note pulse unreachable (so the eighth level wins), and
+> start_beat = onset·bpm/60 counts from audio t=0 (first onset ≡ bar 1 beat 1,
+> so an anacrusis is unrepresentable). Wrong grid then cascades: quantizer
+> splits/ties notes at wrong barlines and _fill_measures inflates durations.
+
+### U31 (P0): Joint meter + tempo-level + phase detection
+
+```
+Task: detect (time signature, BPM metrical level, grid phase) jointly from accent
+features instead of trusting the 4/4 default, and apply the result to the grid.
+
+Changes:
+- backend/app/core/meter_detector.py (new): search meter ∈ {2/4, 3/4, 4/4, 6/8} ×
+  tempo level ∈ {bpm, bpm/2} × phase ∈ sixteenth-grid offsets within one bar;
+  score each hypothesis with accent features computed from data the pipeline
+  already has:
+    1. agogic (long IOI on strong beats), 2. dynamic (RMS/velocity on strong
+    beats), 3. phrase-final note on a downbeat, 4. bar-length parallelism
+    (autocorrelation of the onset pattern), 5. tonal accent (stable degrees of
+    the detected key on downbeats), 6. anti-syncopation penalty (hypotheses
+    that force many cross-barline ties lose). Weights are FITTED, not guessed —
+    see the harness below.
+- Weight-fitting harness: tests/meter_cases.py generates labeled cases with the
+  U2 synth (same melodies rendered in 2/4, 3/4, 4/4, with and without pickup,
+  several tempi) — meter/phase known by construction; a small grid search picks
+  the weights, which are committed as constants with the fitting script.
+- Integration (backend/app/services/segmentation_service.py + API): the
+  transcribe request's timeSignature becomes optional; when absent, use the
+  detector and return the detected value + confidence. Phase is applied by
+  offsetting start_beat so the first FULL bar starts at the detected downbeat;
+  the anacrusis portion renders as leading rests within bar 1 (exactly how the
+  printed part engraves it) — the implicit-pickup-bar notation is U32.
+- tempo_detector.py: keep BPM_MIN=70 for the base pass, but the joint search
+  may halve the result (half level reaches 50-89 effectively).
+- Frontend: TranscribeOptions time signature default becomes "авто" (sends
+  nothing); the editor metadata chip shows «2/4 (авто)» when detected.
+
+Verify:
+- Synthetic harness: meter+phase accuracy ≥ 90% across generated cases (CI)
+- Real: both que_lindo recordings detect 2/4 (non-strict on CI if pyin differs
+  on Linux, following the U29 xfail pattern); cross-barline tie count drops to
+  ~0 on que_lindo; benchmark_accuracy.py numbers for U-B metrics unchanged
+```
+
+### U31b (P2, experiment): Learned downbeat model as an optional signal
+
+```
+Task: benchmark madmom DBNDownBeatTracking / beat_this on our fixtures vs U31.
+
+Changes: experiment script only (backend/tests/experiment_downbeat.py, not in
+CI); if the learned model beats the deterministic search on real recordings,
+wire it as an extra scoring feature with a clean fallback when unavailable.
+Document the verdict (accuracy, install pain, model size) in the PR.
+
+Verify: script runs locally and prints a comparison table; no app dependency
+is added unless the verdict says so.
+```
+
+### U32 (P1): True pickup-measure notation
+
+```
+Task: engrave the anacrusis as an implicit (incomplete) first measure instead
+of leading rests.
+
+Changes: quantizer emits measure 0 with only the pickup note(s); VexFlow
+renderer draws the short first measure (voice is already non-strict); MusicXML
+export marks it <measure implicit="yes">; playback cursor and measure numbers
+account for the offset.
+
+Verify: que_lindo renders pickup D4 eighth alone before bar 1, like the print;
+MusicXML round-trips through import preserving the pickup
+```
+
+### U33 (P1): Full note-by-note Que-Lindo ground truth
+
+```
+Task: complete tests/fixtures/real/que_lindo.yml — the file itself says full
+ground truth "must be entered by a musician"; enter it from the printed score.
+
+Changes: full pitch+duration+measure sequence for the ~16-bar vocal part
+(2/4, pickup D4, G major) entered from the printed part; strict per-note
+assertions replace the contour-level ones for local runs (CI keeps the
+non-strict tier per U29); benchmark_accuracy.py adds bar-alignment score,
+cross-barline-tie delta and meter accuracy as reported metrics.
+
+Verify: benchmark prints the new metrics for both recordings; local strict
+suite green
+```
+
+### U34 (P1): Quantizer self-diagnosis and honest fills
+
+```
+Task: stop the quantizer from fabricating notation when the grid is wrong.
+
+Changes: if > 20% of notes end up tied across barlines, flag the grid as
+suspect and re-run the U31 search excluding the winning hypothesis;
+_fill_measures may extend a note by at most one dot — longer gaps become
+rests (no more inflated whole notes at bar ends).
+
+Verify: unit tests for both rules; que_lindo tie count stays ~0; synthetic
+suite unchanged
+```
+
+### U35 (P2): Meter confidence in the UI
+
+```
+Task: let the user fix a wrong auto-detection in one click.
+
+Changes: transcribe response carries timeSignature confidence; the editor
+metadata chip shows «2/4 (авто)» and opens a small popover offering 2/4, 3/4,
+4/4, 6/8 → one click re-quantizes (existing re-transcribe flow) without
+re-detecting pitch.
+
+Verify: manual — switch meter on a transcription, notes re-bar instantly;
+chip reflects the explicit choice (no «авто» suffix)
+```
+
 ## Execution order & dependencies
 
 ```
@@ -649,6 +773,7 @@ U-A (foundation)  : U1 → U2 → U3 → U4 → U5 → U6 → U7 → U8
 U-B (quality)     : U29 → U9 → U30 → U10 → U11 → U12 → U13 → U14   (needs U2/U3; U29 needs U6 for the CI ffmpeg step; U13 also needs U7)
 U-C (UX/design)   : U15 → U16 → U17 → U18 → U19 → U20 → U21 → U22 → U23   (U16 needs U15; U18/U19 need U16; U20 is independent)
 U-D (desktop)     : U24 → U25 → U26 → U27 → U28            (U24 needs U16/U17 only for localized labels — can start after U8 if needed)
+U-E (metric)      : U31 → U32 → U33 → U34 → U35; U31b any time after U31   (U33 can run first if a measuring stick is wanted early)
 ```
 
 **Recommended milestones:**
