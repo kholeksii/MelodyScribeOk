@@ -28,3 +28,5 @@ class TranscriptionData(BaseModel):
     instrument: str
     # None when the user supplied the meter explicitly (U31 auto-detection)
     time_signature_confidence: float | None = None
+    # Length of the anacrusis (implicit measure 0) in beats, if any (U32)
+    pickup_beats: float | None = None

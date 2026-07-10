@@ -52,26 +52,61 @@ class PDFService:
         md.composer = project.metadata.instrument.title()
         score.metadata = md
 
-        part = stream.Part()
+        pickup_notes = [nd for nd in project.notes if nd.measure == 0]
+        if pickup_notes:
+            part = self._build_part_with_pickup(project, pickup_notes)
+        else:
+            part = stream.Part()
+            self._append_signatures(part, project)
+            for nd in project.notes:
+                part.append(self._note_data_to_element(nd))
+            part.makeMeasures(inPlace=True)
 
-        ts = meter.TimeSignature(project.metadata.time_signature)
-        part.append(ts)
+        score.append(part)
+        return score
 
+    def _append_signatures(self, target, project: Project) -> None:
+        target.append(meter.TimeSignature(project.metadata.time_signature))
         ks = self._parse_key(project.metadata.key)
         if ks:
-            part.append(ks)
+            target.append(ks)
+        target.append(tempo.MetronomeMark(number=project.metadata.tempo))
 
-        mm = tempo.MetronomeMark(number=project.metadata.tempo)
-        part.append(mm)
+    def _build_part_with_pickup(
+        self, project: Project, pickup_notes: list[NoteData]
+    ) -> stream.Part:
+        """An anacrusis is an implicit short first measure (number 0 with
+        paddingLeft), which MusicXML marks implicit="yes" — measure numbering
+        of the full bars starts at 1, exactly like the printed part (U32)."""
+        ts = meter.TimeSignature(project.metadata.time_signature)
+        pickup_ql = sum(
+            DURATION_MAP.get(nd.duration, 1.0) for nd in pickup_notes
+        )
 
+        m0 = stream.Measure(number=0)
+        m0.paddingLeft = max(0.0, float(ts.barDuration.quarterLength) - pickup_ql)
+        # music21 writes <measure implicit="yes"> from showNumber == NEVER
+        m0.showNumber = stream.enums.ShowNumber.NEVER
+        self._append_signatures(m0, project)
+        for nd in pickup_notes:
+            m0.append(self._note_data_to_element(nd))
+
+        # Full bars start at the bar-2 downbeat; makeMeasures numbers them 1..n
+        body = stream.Part()
         for nd in project.notes:
-            el = self._note_data_to_element(nd)
-            part.append(el)
+            if nd.measure != 0:
+                body.append(self._note_data_to_element(nd))
+        body.insert(0, meter.TimeSignature(project.metadata.time_signature))
+        body.makeMeasures(inPlace=True)
 
-        part.makeMeasures(inPlace=True)
-        score.append(part)
-
-        return score
+        part = stream.Part()
+        part.append(m0)
+        offset = pickup_ql
+        for m in body.getElementsByClass(stream.Measure):
+            m.removeByClass(meter.TimeSignature)
+            part.insert(offset, m)
+            offset += float(m.duration.quarterLength)
+        return part
 
     def _note_data_to_element(self, nd: NoteData):
         """Convert NoteData to a music21 note or rest."""

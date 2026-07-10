@@ -148,6 +148,12 @@ class SegmentationService:
             notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
             logger.info(f"Quantized {len(notes)} notes")
 
+            # Anacrusis: turn the leading-rest padding into a true pickup
+            # measure (measure 0, engraved implicit) — U32
+            notes, pickup_beats = self.quantizer.extract_pickup(notes, ts)
+            if pickup_beats is not None:
+                logger.info(f"Pickup measure extracted: {pickup_beats} beats")
+
             if key is not None:
                 logger.info(f"Using user-supplied key: {key}")
                 detected_key = key
@@ -202,6 +208,7 @@ class SegmentationService:
             key=str(detected_key),
             time_signature=ts,
             time_signature_confidence=ts_confidence,
+            pickup_beats=pickup_beats,
             instrument=instrument,
         )
         logger.info("Transcription completed successfully")
