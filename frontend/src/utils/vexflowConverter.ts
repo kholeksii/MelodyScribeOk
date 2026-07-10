@@ -53,7 +53,8 @@ export function convertDurationToVexFlow(duration: string): string {
 export function groupNotesByMeasure(notes: NoteData[]): NoteData[][] {
   const measureGroups = new Map<number, NoteData[]>();
   notes.forEach((note) => {
-    const m = note.measure || 1;
+    // ?? not ||: measure 0 is the pickup (anacrusis) bar and must stay 0
+    const m = note.measure ?? 1;
     if (!measureGroups.has(m)) measureGroups.set(m, []);
     measureGroups.get(m)!.push(note);
   });

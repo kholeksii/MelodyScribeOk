@@ -82,7 +82,14 @@ async def import_musicxml(file: UploadFile):
             for idx, element in enumerate(part.flat.notesAndRests):
                 ql = float(element.duration.quarterLength)
                 start_beat = float(element.offset)
-                measure_num = int(start_beat // beats_per_measure) + 1
+                # music21 numbers an implicit pickup measure 0 — trust it so
+                # an anacrusis survives the round-trip (U32); fall back to
+                # offset math for elements outside measures
+                m21_measure = element.measureNumber
+                if m21_measure is not None:
+                    measure_num = int(m21_measure)
+                else:
+                    measure_num = int(start_beat // beats_per_measure) + 1
 
                 if isinstance(element, m21note.Rest):
                     notes.append(NoteData(

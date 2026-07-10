@@ -1,29 +1,88 @@
 # Ground truth for the Que Lindo Atardecer regression fixtures.
 #
 # Piece: "¡Qué lindo atardecer!" (Ricardo Lafuente, arr. Manuel M. Guirao)
-# Two recordings of the same part, played from the printed score:
+# Two recordings of the same printed part, played from the score:
 #   que_lindo_piano.m4a  — piano
 #   que_lindo_violin.m4a — violin
+# The takes cover the first period of the vocal part: the eighth-note pickup
+# ("¡Que") through the half-cadence long D4 ("...oscuridad!"), ~8 bars of 2/4.
 #
-# NOTE: full note-by-note ground truth (durations, complete pitch list) must
-# be entered by a musician reading the printed score before strict per-note
-# assertions are added; until then only contour-level assertions are used.
+# U33 provenance: this ground truth was reconstructed by aligning the two
+# independent takes note-for-note (double-trigger artifacts merged) against
+# the printed part's lyrics and rhythm. Tiers below are ordered by how much
+# evidence backs them. The full reconstructed score (with durations) is in
+# `full_score`; a MusicXML render of it lives next to this file
+# (que_lindo_reference.musicxml) — PROOFREAD by a musician against the print
+# before flipping `proofread: true` and tightening the duration assertions.
 
 piece: "Que lindo atardecer"
-key: "G major" # one sharp in the printed score
-final_note: "G" # the phrase ends on the tonic
+key: "G major"          # one sharp in the printed score
+time_signature: "2/4"   # printed meter
+tempo_quarter: 66       # approximate quarter-note pulse of both takes
 
-# Consensus opening of the vocal phrase, confirmed by BOTH independent
-# recordings against the printed part (lyrics: "(Que) lin-do a-tar-de-cer se ad-mi-ra"):
-# pickup D4, then repeated B4s descending through G4 and E4 back to D4.
-opening_pitches: [D4, B4, B4, B4, B4, G4, E4]
+# ── Tier 1: structural truths (asserted strictly) ─────────────────────────
+pickup:
+  pitch: "D4"           # "¡Que" — eighth-note anacrusis
+  beats: 0.5
 
-# Contour actually asserted by tests: consecutive repeated pitches merged,
-# low-confidence notes dropped. Both recordings contain this contiguous run.
+# Long-note anchors: agogically strong notes both takes hold ≥ a dotted
+# quarter. Their mutual spacing is a rhythm assertion independent of the
+# detected meter: F#4 ("biar") starts 4 quarters after D4 ("cer").
+anchors:
+  - {pitch: "D4", lyric: "cer",  hold_beats_min: 1.0}
+  - {pitch: "F#4", lyric: "biar", hold_beats_min: 1.0, quarters_after_prev_anchor: 4.0}
+anchor_spacing_tolerance: 0.5   # rubato drift measured across the takes
+
+# ── Tier 2: consensus pitch sequence (asserted via LCS ≥ threshold) ───────
+# Merged sounding pitches of the whole take, agreed by BOTH recordings after
+# double-trigger removal. Lyrics: ¡Que lin-do_a-tar-de-cer ¡Que bien se ve
+# cam-biar la luz del sol en os-cu-ri-dad!
+consensus_pitches:
+  [D4, B4, G4, E4, D4,          # ¡Que lin-do_a-tar-de(-cer→)
+   D4, B4, A4, G4, F#4,         # ¡Que bien-se ve cam-biar   (B4 twice merges)
+   D4, C5, B4, A4,              # la luz(-del) sol en
+   B4, C5, B4, A4,              # os-cu-ri-(dad…)
+   G4, E4, D4]                  # cadence run to the held D4
+consensus_lcs_min: 0.75
+
+# Kept for the pre-U33 contour tests:
 assertion_phrase: [B4, G4, E4, D4]
+opening_pitches: [D4, B4, B4, G4, E4]   # corrected: 2 B4 events, not 4
+final_note: "D"   # half-cadence on the dominant (corrected from "G": the
+                  # takes end the first period on a long D4; the full piece
+                  # closes on G, but the recordings stop at the half-cadence)
 
-# Both takes were played at a similar, unmeasured tempo; tests only assert
-# cross-recording consistency, not an absolute BPM.
+# ── Tier 3: full reconstructed score (proofread before strict use) ────────
+# 2/4; measure 0 = pickup. Durations in quarter beats. Items with
+# `uncertain: true` differ between takes or involve merged re-triggers.
+proofread: false
+full_score:
+  - {measure: 0, pitch: D4,  beats: 0.5,  lyric: "¡Que"}
+  - {measure: 1, pitch: B4,  beats: 0.75, lyric: "lin"}
+  - {measure: 1, pitch: B4,  beats: 0.25, lyric: "do_a"}
+  - {measure: 1, pitch: G4,  beats: 0.5,  lyric: "tar"}
+  - {measure: 1, pitch: E4,  beats: 0.5,  lyric: "de"}
+  - {measure: 2, pitch: D4,  beats: 1.5,  lyric: "cer"}
+  - {measure: 2, pitch: D4,  beats: 0.5,  lyric: "¡Que"}
+  - {measure: 3, pitch: B4,  beats: 0.5,  lyric: "bien"}
+  - {measure: 3, pitch: B4,  beats: 0.5,  lyric: "se"}
+  - {measure: 3, pitch: A4,  beats: 0.5,  lyric: "ve", uncertain: true}
+  - {measure: 3, pitch: G4,  beats: 0.5,  lyric: "cam", uncertain: true}
+  - {measure: 4, pitch: F#4, beats: 1.5,  lyric: "biar"}
+  - {measure: 4, pitch: D4,  beats: 0.5,  lyric: "la"}
+  - {measure: 5, pitch: C5,  beats: 1.0,  lyric: "luz", uncertain: true}
+  - {measure: 5, pitch: C5,  beats: 0.5,  lyric: "del", uncertain: true}
+  - {measure: 5, pitch: B4,  beats: 0.5,  lyric: "sol"}
+  - {measure: 6, pitch: A4,  beats: 0.75, lyric: "en"}
+  - {measure: 6, pitch: B4,  beats: 0.25, lyric: "os"}
+  - {measure: 6, pitch: C5,  beats: 0.5,  lyric: "cu"}
+  - {measure: 6, pitch: B4,  beats: 0.5,  lyric: "ri", uncertain: true}
+  - {measure: 7, pitch: A4,  beats: 0.75, lyric: "dad", uncertain: true}
+  - {measure: 7, pitch: A4,  beats: 0.25, uncertain: true}
+  - {measure: 7, pitch: G4,  beats: 0.5,  uncertain: true}
+  - {measure: 7, pitch: E4,  beats: 0.5,  uncertain: true}
+  - {measure: 8, pitch: D4,  beats: 2.0,  lyric: "(hold)"}
+
 recordings:
   - file: que_lindo_piano.m4a
     instrument: piano

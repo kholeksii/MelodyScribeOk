@@ -174,6 +174,55 @@ class Quantizer:
                 i += 1
         return members
 
+    @classmethod
+    def extract_pickup(
+        cls, notes: list[dict], time_signature: str = "4/4"
+    ) -> tuple[list[dict], float | None]:
+        """Convert a leading-rest anacrusis into a true pickup measure (U32).
+
+        The meter detector engraves a detected anacrusis as rests filling the
+        start of bar 1 (how a mid-piece pickup is printed). For a piece that
+        BEGINS with the pickup, engraving convention is an implicit short
+        first measure instead. When quantized `notes` start with rest(s)
+        covering [0, first_onset) inside bar 1 followed by sounding notes
+        completing that bar, this: drops the rests, shifts every start_beat
+        left so the pickup begins at beat 0 (which also restores the audio
+        timeline for playback), renumbers the pickup as measure 0 and the
+        rest downward. Returns (new_notes, pickup_beats) — pickup_beats is
+        None when there is nothing to convert.
+        """
+        bpb = _beats_per_measure(time_signature)
+        prefix_rests = 0
+        for n in notes:
+            if n.get("note") == "rest" and n["measure"] == 1:
+                prefix_rests += 1
+            else:
+                break
+        if prefix_rests == 0 or prefix_rests >= len(notes):
+            return notes, None
+
+        first = notes[prefix_rests]
+        pad = float(first["start_beat"])
+        pickup = round(bpb - pad, 6)
+        # a pickup must start inside bar 1 and be shorter than the bar
+        if not (GRID / 2 < pad < bpb - GRID / 2) or first["measure"] != 1:
+            return notes, None
+        # the sounding notes must reach the bar 2 downbeat (complete bar 1)
+        bar1 = [n for n in notes[prefix_rests:] if n["measure"] == 1]
+        filled = pad + sum(cls.effective_beats(n) for n in bar1)
+        if abs(filled - bpb) > GRID / 2:
+            return notes, None
+
+        out = []
+        for n in notes[prefix_rests:]:
+            moved = dict(n)
+            moved["start_beat"] = round(float(n["start_beat"]) - pad, 6)
+            moved["measure"] = 0 if moved["start_beat"] < pickup - GRID / 2 else (
+                int((moved["start_beat"] - pickup) // bpb) + 1
+            )
+            out.append(moved)
+        return out, pickup
+
     def _fill_measures(self, notes: list[dict], bpb: float) -> list[dict]:
         """
         If a measure is under-filled, extend the last note in it to fill

@@ -88,10 +88,11 @@ describe('groupNotesByMeasure', () => {
     expect(groups.map((g) => g.map((n) => n.id))).toEqual([['b'], ['a', 'c']]);
   });
 
-  it('treats measure 0/undefined as measure 1', () => {
+  it('keeps measure 0 as a separate leading pickup group (U32)', () => {
     const groups = groupNotesByMeasure([note('a', 0), note('b', 1)]);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].map((n) => n.id)).toEqual(['a', 'b']);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].map((n) => n.id)).toEqual(['a']);
+    expect(groups[1].map((n) => n.id)).toEqual(['b']);
   });
 
   it('returns empty array for no notes', () => {
