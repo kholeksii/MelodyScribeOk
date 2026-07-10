@@ -150,6 +150,81 @@ def test_meter_detected_as_2_4(transcriptions: dict, instrument: str) -> None:
     )
 
 
+# ── U33: tiered ground-truth assertions ────────────────────────────────────
+
+DURATION_BEATS = {
+    "whole": 4.0, "half.": 3.0, "half": 2.0, "quarter.": 1.5, "quarter": 1.0,
+    "eighth.": 0.75, "eighth": 0.5, "sixteenth": 0.25,
+}
+
+
+@pytest.mark.parametrize("instrument", ["piano", "violin"])
+def test_long_note_anchors_spacing(
+    transcriptions: dict, ground_truth: dict, instrument: str
+) -> None:
+    """Tier 1 (meter-independent rhythm truth): the held D4 («cer») and the
+    held F#4 («biar») are 4 quarters apart in the printed part. start_beats
+    are quarter units once U31 folds the tempo level, so their spacing is a
+    strict assertion however the meter itself was labeled."""
+    notes = transcriptions[instrument].notes
+    d4 = next(
+        (n for n in notes if n.pitch == "D4"
+         and DURATION_BEATS.get(n.duration, 0) >= 1.0),
+        None,
+    )
+    assert d4 is not None, f"{instrument}: held D4 anchor not found"
+    f_sharp = next(
+        (n for n in notes if n.pitch == "F#4" and n.start_beat > d4.start_beat
+         and DURATION_BEATS.get(n.duration, 0) >= 1.0),
+        None,
+    )
+    assert f_sharp is not None, f"{instrument}: held F#4 anchor not found"
+
+    spacing = f_sharp.start_beat - d4.start_beat
+    expected = ground_truth["anchors"][1]["quarters_after_prev_anchor"]
+    tol = ground_truth["anchor_spacing_tolerance"]
+    assert abs(spacing - expected) <= tol, (
+        f"{instrument}: anchor spacing {spacing} vs printed {expected}±{tol}"
+    )
+
+
+@pytest.mark.parametrize("instrument", ["piano", "violin"])
+def test_consensus_pitch_sequence_lcs(
+    transcriptions: dict, ground_truth: dict, instrument: str
+) -> None:
+    """Tier 2: the whole-take merged pitch sequence must cover the
+    cross-recording consensus (U33) — far stronger than the 4-note phrase."""
+    consensus = ground_truth["consensus_pitches"]
+    pitches = merged_confident_pitches(transcriptions[instrument])
+    ratio = lcs_length(pitches, consensus) / len(consensus)
+    assert ratio >= ground_truth["consensus_lcs_min"], (
+        f"{instrument}: consensus LCS {ratio:.2f} < "
+        f"{ground_truth['consensus_lcs_min']} (got {pitches})"
+    )
+
+
+def test_reference_musicxml_matches_ground_truth() -> None:
+    """The committed reference MusicXML (for the musician's proofread) must
+    stay in sync with full_score in the yml: same pitches, same bar sums."""
+    import yaml
+    from music21 import converter, stream
+
+    gt = yaml.safe_load((FIXTURES / "que_lindo.yml").read_text())
+    score = converter.parse(str(FIXTURES / "que_lindo_reference.musicxml"))
+    measures = list(score.parts[0].getElementsByClass(stream.Measure))
+
+    assert measures[0].number == 0, "reference must start with the pickup bar"
+    ref_pitches = [
+        n.nameWithOctave.replace("-", "b")
+        for m in measures for n in m.notes
+    ]
+    gt_pitches = [item["pitch"] for item in gt["full_score"]]
+    assert ref_pitches == gt_pitches
+    # every full bar sums to the printed 2/4
+    for m in measures[1:]:
+        assert float(m.duration.quarterLength) == pytest.approx(2.0)
+
+
 @pytest.mark.parametrize("instrument", ["piano", "violin"])
 def test_no_cross_barline_tie_flood(transcriptions: dict, instrument: str) -> None:
     """A wrong grid shreds notes at barlines; with the right meter the share

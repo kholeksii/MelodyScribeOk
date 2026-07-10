@@ -27,6 +27,11 @@ figures remain the known ambiguity, the BPM hint is the override.
 History: before U11 guitar_low was 0.14 (+6 phantom fragments), wide_leaps
 0.83, with_rests tempo 91, cross-agreement 0.87; before U14 the real takes
 disagreed on tempo (132 vs 107).
+
+U-E baseline (2026-07-10, after U31/U32/U33, macOS): real takes bpm 66/66
+(quarter pulse, was 133), ties 8%/7%, consensus LCS 0.95/0.95 vs the U33
+ground truth, meter still 3/4✗/4/4✗ on heavy rubato (the documented U31
+boundary — waiting on U31b).
 """
 import shutil
 import tempfile
@@ -147,14 +152,31 @@ def run_real(service: SegmentationService) -> None:
     if shutil.which("ffmpeg") is None:
         print("## Real recordings: skipped (ffmpeg not installed)\n")
         return
-    print("## Real recordings (Que Lindo Atardecer, true key G major)\n")
-    print("| take | key | bpm | notes |")
-    print("|------|-----|-----|-------|")
+    import yaml
+
+    gt = yaml.safe_load((FIXTURES_REAL / "que_lindo.yml").read_text())
+    consensus = gt["consensus_pitches"]
+    true_ts = gt["time_signature"]
+
+    print(f"## Real recordings (Que Lindo Atardecer, true: {gt['key']}, "
+          f"{true_ts} @ ~{gt['tempo_quarter']}, pickup {gt['pickup']['pitch']})\n")
+    print("| take | key | bpm | meter (true 2/4) | pickup | notes | ties % | consensus LCS |")
+    print("|------|-----|-----|------------------|--------|-------|--------|---------------|")
     results = {}
     for take, instrument in (("que_lindo_piano.m4a", "piano"), ("que_lindo_violin.m4a", "violin")):
         result = service.transcribe(str(FIXTURES_REAL / take), instrument)
         results[instrument] = result
-        print(f"| {instrument} | {result.key} | {result.tempo} | {len(result.notes)} |")
+        tied = sum(1 for n in result.notes if n.tie_start)
+        tie_share = tied / max(len(result.notes), 1)
+        meter_mark = "✓" if result.time_signature == true_ts else "✗"
+        merged = sounding_pitches(result)
+        lcs = lcs_length(merged, consensus) / len(consensus)
+        print(
+            f"| {instrument} | {result.key} | {result.tempo} "
+            f"| {result.time_signature} {meter_mark} "
+            f"| {result.pickup_beats if result.pickup_beats is not None else '—'} "
+            f"| {len(result.notes)} | {tie_share:.0%} | {lcs:.2f} |"
+        )
     piano = sounding_pitches(results["piano"])
     violin = sounding_pitches(results["violin"])
     agreement = lcs_length(piano, violin) / max(len(piano), len(violin))
