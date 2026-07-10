@@ -26,7 +26,8 @@ function App() {
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isWindowDragOver, setIsWindowDragOver] = useState(false);
   const [optBpm, setOptBpm] = useState('');
-  const [optTimeSignature, setOptTimeSignature] = useState('4/4');
+  // '' = auto-detect meter on the backend (U31)
+  const [optTimeSignature, setOptTimeSignature] = useState('');
   const [optKey, setOptKey] = useState('');
   const { showToast } = useToast();
   const t = useT();
