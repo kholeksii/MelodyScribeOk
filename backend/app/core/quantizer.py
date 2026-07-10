@@ -225,25 +225,52 @@ class Quantizer:
 
     def _fill_measures(self, notes: list[dict], bpb: float) -> list[dict]:
         """
-        If a measure is under-filled, extend the last note in it to fill
-        the remaining beats (capped at a whole note).
+        If a measure is under-filled, extend its last note by AT MOST one dot
+        (×1.5); anything longer becomes trailing rests (U34). The old
+        behavior inflated the last note up to a whole note, fabricating
+        durations whenever the grid was wrong.
         """
         measures: dict[int, list[int]] = {}
         for i, n in enumerate(notes):
             m = n["measure"]
             measures.setdefault(m, []).append(i)
 
-        for indices in measures.values():
+        extra_rests: list[dict] = []
+        for measure_num, indices in measures.items():
             used = sum(self.effective_beats(notes[i]) for i in indices)
             remaining = round(bpb - used, 6)
+            if remaining <= GRID / 2:
+                continue
 
-            if remaining > GRID / 2:
-                # Extend the last non-triplet note in this measure
-                candidates = [i for i in indices if notes[i].get("tuplet") is None]
-                if not candidates:
-                    continue
-                last_idx = candidates[-1]
-                current = self.DURATION_MAP.get(notes[last_idx]["duration"], 1.0)
+            candidates = [i for i in indices if notes[i].get("tuplet") is None]
+            if not candidates:
+                continue
+            last_idx = candidates[-1]
+            current = self.DURATION_MAP.get(notes[last_idx]["duration"], 1.0)
+
+            if current + remaining <= current * 1.5 + GRID / 2:
+                # a dot's worth or less — extend the note honestly
                 notes[last_idx]["duration"] = _closest_duration(current + remaining)
+                continue
 
+            # Longer gap: keep the note, fill the tail with rests decomposed
+            # greedily into standard values (starts are on the 1/16 grid, so
+            # the decomposition is exact and the bar still sums to bpb)
+            rest_start = round(measure_num * bpb - remaining, 6)
+            for name, value in BEAT_VALUES:  # descending
+                while remaining >= value - GRID / 2:
+                    extra_rests.append({
+                        "note": "rest",
+                        "start_beat": rest_start,
+                        "measure": measure_num,
+                        "duration": name,
+                        "confidence": 1.0,
+                        "velocity": 0,
+                        "articulation": None,
+                    })
+                    rest_start = round(rest_start + value, 6)
+                    remaining = round(remaining - value, 6)
+
+        if extra_rests:
+            notes = sorted(notes + extra_rests, key=lambda n: n["start_beat"])
         return notes

@@ -102,11 +102,14 @@ class MeterDetector:
         raw_notes: list[dict],
         allow_half_level: bool = True,
         bpm: int | None = None,
+        exclude: set[tuple[str, float, float]] | None = None,
     ) -> MeterResult:
         """raw_notes: segmentation output — dicts with 'start_beat' (float,
         at the incoming tempo level), 'note' and 'velocity'. Rests are used
         for gaps only. `bpm` (the incoming tempo estimate) enables the tactus
-        prior that disambiguates metrically equivalent readings."""
+        prior that disambiguates metrically equivalent readings. `exclude`
+        skips specific (time_signature, level, phase) hypotheses — used by
+        the U34 self-diagnosis retry when the winner produced a tie flood."""
         sounding = [n for n in raw_notes if n.get("note") != "rest"]
         if len(sounding) < 4:
             return MeterResult("4/4", 1.0, 0.0, 0.0, 0.0)
@@ -134,6 +137,8 @@ class MeterDetector:
                 n_phases = int(round(bar / PHASE_STEP))
                 for k in range(n_phases):
                     phase = k * PHASE_STEP
+                    if exclude and (name, level, phase) in exclude:
+                        continue
                     score = self._score(
                         starts, iois, vels, pcs, tonic_pc, bar, slots, level, phase
                     )
@@ -148,6 +153,8 @@ class MeterDetector:
                         score += PRIOR_PHASE_0
                     scored.append((name, level, phase, score))
 
+        if not scored:
+            return MeterResult("4/4", 1.0, 0.0, 0.0, 0.0)
         scored.sort(key=lambda t: -t[3])
         top_name, top_level, top_phase, top_score = scored[0]
         for name, _lv, _ph, sc in scored[1:]:
