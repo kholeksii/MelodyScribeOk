@@ -62,6 +62,9 @@ def _detect_articulation(duration_sec: float, gap_sec: float) -> str | None:
 
 
 class SegmentationService:
+    # U34: above this share of tie_start notes the grid is considered wrong
+    TIE_FLOOD_SHARE = 0.2
+
     def __init__(self):
         self.pitch_detector = PitchDetector()
         self.onset_detector = OnsetDetector()
@@ -128,29 +131,55 @@ class SegmentationService:
             ts_confidence: float | None = None
             if time_signature is not None:
                 ts = time_signature
+                logger.info("Quantizing notes...")
+                notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
+                notes, pickup_beats = self.quantizer.extract_pickup(notes, ts)
             else:
                 logger.info("Detecting meter (joint meter/level/phase search)...")
+                segmented = notes
                 meter = self.meter_detector.detect(
-                    notes, allow_half_level=(bpm is None), bpm=int(tempo)
+                    segmented, allow_half_level=(bpm is None), bpm=int(tempo)
                 )
+                notes, quantized_tempo, pickup_beats = self._grid_and_quantize(
+                    segmented, tempo, meter
+                )
+
+                # Self-diagnosis (U34): a flood of cross-barline ties means
+                # the grid is almost certainly wrong — retry once with the
+                # winning hypothesis excluded and keep the cleaner result
+                tie_share = self._tie_share(notes)
+                if tie_share > self.TIE_FLOOD_SHARE:
+                    logger.info(
+                        f"Grid suspect: {tie_share:.0%} notes tied across "
+                        f"barlines — retrying without {meter.time_signature}/"
+                        f"lv{meter.level}/ph{meter.phase}"
+                    )
+                    retry = self.meter_detector.detect(
+                        segmented,
+                        allow_half_level=(bpm is None),
+                        bpm=int(tempo),
+                        exclude={(meter.time_signature, meter.level, meter.phase)},
+                    )
+                    retry_notes, retry_tempo, retry_pickup = self._grid_and_quantize(
+                        segmented, tempo, retry
+                    )
+                    if self._tie_share(retry_notes) < tie_share:
+                        logger.info(
+                            f"Retry grid is cleaner: {retry.time_signature} "
+                            f"({self._tie_share(retry_notes):.0%} ties)"
+                        )
+                        meter, notes = retry, retry_notes
+                        quantized_tempo, pickup_beats = retry_tempo, retry_pickup
+
                 ts = meter.time_signature
                 ts_confidence = meter.confidence
-                if meter.level != 1.0 or meter.phase != 0.0:
-                    notes = self.meter_detector.apply(notes, meter)
-                    tempo = max(1, int(round(tempo * meter.level)))
+                tempo = quantized_tempo
                 logger.info(
-                    f"Detected meter: {ts} (level={meter.level}, "
-                    f"phase={meter.phase}, confidence={meter.confidence:.2f}, "
-                    f"tempo now {tempo})"
+                    f"Meter: {ts} (level={meter.level}, phase={meter.phase}, "
+                    f"confidence={meter.confidence:.2f}, tempo {tempo})"
                 )
 
-            logger.info("Quantizing notes...")
-            notes = self.quantizer.quantize_notes(notes, tempo, time_signature=ts)
             logger.info(f"Quantized {len(notes)} notes")
-
-            # Anacrusis: turn the leading-rest padding into a true pickup
-            # measure (measure 0, engraved implicit) — U32
-            notes, pickup_beats = self.quantizer.extract_pickup(notes, ts)
             if pickup_beats is not None:
                 logger.info(f"Pickup measure extracted: {pickup_beats} beats")
 
@@ -213,6 +242,33 @@ class SegmentationService:
         )
         logger.info("Transcription completed successfully")
         return result
+
+    def _grid_and_quantize(
+        self, segmented: list[dict], tempo: int, meter
+    ) -> tuple[list[dict], int, float | None]:
+        """Apply a meter hypothesis to freshly segmented notes and quantize:
+        rescale/shift the grid (U31), quantize, extract the pickup (U32).
+        Leaves `segmented` untouched so the U34 retry can re-use it."""
+        if meter.level != 1.0 or meter.phase != 0.0:
+            notes = self.meter_detector.apply(segmented, meter)
+            new_tempo = max(1, int(round(tempo * meter.level)))
+        else:
+            notes = [dict(n) for n in segmented]
+            new_tempo = int(tempo)
+        notes = self.quantizer.quantize_notes(
+            notes, new_tempo, time_signature=meter.time_signature
+        )
+        notes, pickup_beats = self.quantizer.extract_pickup(
+            notes, meter.time_signature
+        )
+        return notes, new_tempo, pickup_beats
+
+    @staticmethod
+    def _tie_share(notes: list[dict]) -> float:
+        """Share of notes tied across a barline — the U34 grid-health metric."""
+        if not notes:
+            return 0.0
+        return sum(1 for n in notes if n.get("tie_start")) / len(notes)
 
     def _segment_notes(
         self,
