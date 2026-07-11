@@ -89,9 +89,13 @@ New shared primitives (`frontend/src/components/ui/`):
   `Експорт ▾` (Експорт PDF / Експорт MusicXML) · `?` · theme · language.
   **VersionBadge moves into the `?` (ShortcutHelp) dialog footer.**
 - **Tablet:** no brand text; title input (max 200px); chips collapse to **one tappable
-  summary chip** (`4/4 · Соль мажор · 90 BPM · Скрипка`, ellipsized ≤ 180px) opening a
+  summary chip** (`2/4 (авто) · Соль мажор · 66 BPM · Скрипка`, ellipsized ≤ 180px) opening a
   metadata popover; `↩` `↪` · `💾` (icon-only) · `Файл ▾` · `Експорт ▾` · `⋯`
   (theme/language/help live in `⋯`).
+- **Meter chip (U35, all tiers):** when the meter was auto-detected the chip shows the
+  «(авто)» suffix; tapping it opens a small popover offering 2/4 · 3/4 · 4/4 · 6/8 —
+  one click re-quantizes via the existing re-transcribe flow, and an explicit choice
+  drops the «(авто)» suffix. Backend already ships `time_signature_confidence` (U31).
 - **Phone:** two rows. Row 1: `←` (New/close with confirm-if-unsaved) · title input (flex-1)
   · `⋯`. Row 2 (thin): summary chip + autosave dot (`збережено` indicator). The `⋯` bottom
   sheet holds: Зберегти ⌘S / Відкрити ⌘O / Імпорт MusicXML / Експорт PDF ⌘E / Експорт
@@ -139,7 +143,8 @@ tablet `max-w-xl` 576px; desktop `max-w-2xl` 672px).
 - **InstrumentSelector** re-skin: segmented control on palette tokens
   (currently off-palette `gray-*`/`blue-*` Tailwind defaults in
   `frontend/src/components/AudioControls/InstrumentSelector.tsx`).
-- Options card: BPM input + Настукати темп in one row; Розмір + Тональність as two
+- Options card: time signature select defaults to **«авто»** (auto-detection, U31) with
+  4/4 · 3/4 · 6/8 · 2/4 as explicit overrides; BPM input + Настукати темп in one row; Розмір + Тональність as two
   half-width selects.
 
 ## 6. Tooltip → label resolution (all 28 `title=` sites)
