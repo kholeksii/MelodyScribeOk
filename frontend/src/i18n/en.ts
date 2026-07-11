@@ -158,6 +158,12 @@ export const en = {
   // Version badge
   version: 'Version',
 
+  // Meter chip (U35)
+  meterChipTitle: 'Change the time signature — re-bars the score',
+  meterChipHeading: 'Time signature',
+  meterNeedsAudio: 'Re-barring needs the audio — transcribe a recording first',
+  meterSwitchFailed: 'Could not re-bar with the new time signature',
+
   // Error boundary / API errors
   errTitle: 'Something went wrong',
   reload: 'Reload',
