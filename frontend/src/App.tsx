@@ -76,6 +76,8 @@ function App() {
         tempo: result.tempo,
         timeSignature: result.timeSignature,
         key: result.key,
+        // «(авто)» suffix on the meter chip when U31 detected it (U35)
+        timeSignatureAuto: result.timeSignatureConfidence != null,
       });
     } catch (err) {
       const msg = localizeError(err, t) || t('transcriptionFailed');

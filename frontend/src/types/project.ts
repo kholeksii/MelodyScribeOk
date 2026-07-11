@@ -6,6 +6,8 @@ export interface ProjectMetadata {
   tempo: number;
   timeSignature: string;
   key: string;
+  /** true when the meter came from U31 auto-detection (chip shows «(авто)») */
+  timeSignatureAuto?: boolean;
 }
 
 export interface Project {
@@ -20,4 +22,6 @@ export interface TranscriptionData {
   key: string;
   timeSignature: string;
   instrument: string;
+  /** non-null when the backend auto-detected the meter (U31) */
+  timeSignatureConfidence?: number | null;
 }

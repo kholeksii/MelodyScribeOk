@@ -9,6 +9,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { ShortcutHelp } from './ShortcutHelp';
 import { VersionBadge } from './VersionBadge';
+import { MeterChip } from './MeterChip';
 import { useProjectStore } from '../store/projectStore';
 import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
 import { clearAutosave } from '../services/autosave';
@@ -54,8 +55,9 @@ export const EditorScreen: React.FC = () => {
     clearAutosave();
   };
 
+  // Time signature renders as the interactive MeterChip (U35), not a span
   const chips = metadata
-    ? [instrumentLabel(metadata.instrument, t), `♩ = ${metadata.tempo}`, metadata.key, metadata.timeSignature]
+    ? [instrumentLabel(metadata.instrument, t), `♩ = ${metadata.tempo}`, metadata.key]
     : [];
 
   return (
@@ -84,6 +86,7 @@ export const EditorScreen: React.FC = () => {
                 {chip}
               </span>
             ))}
+            <MeterChip />
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <button onClick={undo} disabled={!canUndo()} title={t('undoTitle')} className="btn-ghost">

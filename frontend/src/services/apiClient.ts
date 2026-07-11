@@ -107,6 +107,7 @@ interface BackendTranscription {
   time_signature: string;
   instrument: string;
   title?: string;
+  time_signature_confidence?: number | null;
 }
 
 export const apiClient = {
@@ -147,6 +148,7 @@ export const apiClient = {
       key: data.key,
       timeSignature: data.time_signature,
       instrument: data.instrument,
+      timeSignatureConfidence: data.time_signature_confidence ?? null,
     };
   },
 
