@@ -1,0 +1,190 @@
+<!-- @dsCard group="Editor — Tablet/Desktop" name="Редактор (iPad)" subtitle="3 такти/рядок, summary-чіп, картка редагування" width="834" -->
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Editor — iPad 834</title><style>
+  :root{
+    --paper:#FAF6EF; --paper-dark:#F3EDE2; --ink:#2B2A26; --ink-soft:#6B675E;
+    --surface:#FFFFFF; --sheet:#FFFFFF; --accent:#7C5CBF; --accent-hover:#6A4BAD;
+    --valid:#4C8C6A; --warn:#C98A2D; --danger:#B4533F; --staff:#3D3A33;
+    --page-bg:#E9E4D9; --frame-shadow:0 8px 40px rgba(43,42,38,.18);
+    color-scheme:light;
+  }
+  .dark{
+    --paper:#1E1C19; --paper-dark:#2A2723; --ink:#E8E4DC; --ink-soft:#9E988C;
+    --surface:#302D28; --sheet:#F6F2E9;
+    --page-bg:#121110; --frame-shadow:0 8px 40px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--page-bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);padding:48px 16px 80px;transition:background .2s}
+  h1,h2,h3,.font-heading{font-family:Georgia,"Times New Roman",serif}
+
+  /* ── component classes (mirror .btn-* from index.css, new sizes) ── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border-radius:6px;font-size:14px;font-weight:500;border:1px solid transparent;
+    cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;
+    text-decoration:none;background:none;font-family:inherit;color:inherit}
+  .btn-primary{background:var(--accent);color:#fff;padding:0 16px;min-height:36px}
+  .btn-primary:hover{background:var(--accent-hover)}
+  .btn-secondary{background:var(--surface);color:var(--ink);padding:0 16px;min-height:36px;
+    border-color:color-mix(in srgb,var(--ink-soft) 30%,transparent)}
+  .btn-secondary:hover{background:var(--paper-dark)}
+  .btn-ghost{color:var(--ink-soft);padding:0 12px;min-height:32px}
+  .btn-ghost:hover{background:var(--paper-dark);color:var(--ink)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-danger-outline{background:var(--surface);color:var(--danger);padding:0 16px;min-height:36px;
+    border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+  .input-field{border-radius:6px;background:var(--surface);color:var(--ink);
+    border:1px solid color-mix(in srgb,var(--ink-soft) 30%,transparent);
+    padding:0 12px;min-height:36px;font-size:14px;font-family:inherit;width:100%}
+  .card{border-radius:8px;background:var(--surface);padding:16px;
+    border:1px solid color-mix(in srgb,var(--ink-soft) 15%,transparent);
+    box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .chip{display:inline-flex;align-items:center;border-radius:999px;font-size:12px;
+    color:var(--ink-soft);padding:3px 10px;white-space:nowrap;
+    border:1px solid color-mix(in srgb,var(--ink-soft) 20%,transparent);
+    background:color-mix(in srgb,var(--surface) 60%,transparent)}
+
+  /* touch mode: emulates @media(pointer:coarse) — 44px floor everywhere */
+  .touch .btn-primary,.touch .btn-secondary,.touch .btn-danger-outline{min-height:44px;min-width:44px;padding:0 16px}
+  .touch .btn-ghost{min-height:44px;min-width:44px;padding:0 12px}
+  .touch .input-field{min-height:44px}
+  .touch .chip.tappable{min-height:44px;padding:0 14px;font-size:13px}
+
+  /* segmented control */
+  .seg{display:inline-flex;background:var(--paper-dark);border-radius:8px;padding:3px;gap:2px}
+  .seg .btn{min-height:30px;padding:0 12px;border-radius:6px;color:var(--ink-soft)}
+  .touch .seg .btn{min-height:38px}
+  .seg .on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg .on.acc{background:var(--accent);color:#fff}
+
+  /* device frame */
+  .stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .frame{background:var(--paper);border-radius:18px;overflow:hidden;position:relative;
+    box-shadow:var(--frame-shadow);display:flex;flex-direction:column;flex:none}
+  .frame-label{font-size:12px;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase}
+  .caption{font-size:13px;color:var(--ink-soft);max-width:640px;text-align:center;line-height:1.5}
+
+  /* app chrome inside frames */
+  .appbar{background:color-mix(in srgb,var(--paper-dark) 95%,transparent);
+    border-bottom:1px solid color-mix(in srgb,var(--ink-soft) 15%,transparent);flex:none}
+  .brand{font-family:Georgia,serif;font-weight:700;color:var(--ink)}
+  .bottombar{background:color-mix(in srgb,var(--paper-dark) 97%,transparent);
+    border-top:1px solid color-mix(in srgb,var(--ink-soft) 15%,transparent);flex:none;position:relative;z-index:5}
+  .safe-area{height:22px;flex:none;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--paper-dark) 97%,transparent)}
+  .safe-area i{display:block;width:120px;height:5px;border-radius:3px;background:var(--ink-soft);opacity:.45}
+
+  /* sheet of music */
+  .sheet{background:var(--sheet);border-radius:8px;
+    border:1px solid color-mix(in srgb,var(--ink-soft) 18%,transparent);
+    box-shadow:0 1px 3px rgba(0,0,0,.07)}
+  .dark .sheet{box-shadow:0 3px 14px rgba(0,0,0,.5)}
+  .sheet svg{display:block;width:100%;height:auto}
+
+  /* bottom sheet + scrim */
+  .scrim{position:absolute;inset:0;background:rgba(20,18,15,.35);z-index:10}
+  .bsheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--surface);
+    border-radius:16px 16px 0 0;box-shadow:0 -6px 30px rgba(0,0,0,.25);padding:8px 16px 0}
+  .bsheet .grab{width:36px;height:4px;border-radius:2px;background:var(--ink-soft);
+    opacity:.35;margin:4px auto 10px}
+  .sheet-row{display:flex;align-items:center;gap:14px;min-height:48px;width:100%;
+    font-size:15px;color:var(--ink);border-radius:8px;padding:0 8px;cursor:pointer;
+    background:none;border:none;font-family:inherit;text-align:left}
+  .sheet-row:hover{background:var(--paper-dark)}
+  .sheet-row .ic{width:24px;text-align:center;flex:none}
+
+  /* stepper */
+  .stepper{display:inline-flex;align-items:center;gap:8px}
+  .stepper .btn{font-size:18px;font-weight:600}
+
+  /* toasts */
+  .toast{display:flex;align-items:center;gap:10px;border-radius:10px;padding:12px 14px;
+    background:var(--surface);color:var(--ink);font-size:14px;
+    box-shadow:0 6px 24px rgba(0,0,0,.18);border-left:4px solid var(--valid)}
+  .toast.danger{border-left-color:var(--danger)}
+  .field-error{color:var(--danger);font-size:12px;margin-top:4px}
+
+  .note-name{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--ink)}
+  .kbd{font-family:ui-monospace,monospace;font-size:11px;background:var(--paper-dark);
+    border:1px solid color-mix(in srgb,var(--ink-soft) 25%,transparent);
+    border-radius:4px;padding:1px 5px;color:var(--ink-soft)}
+  a{color:var(--accent)}
+</style></head>
+<body>
+<button id="themeBtn" onclick="document.documentElement.classList.toggle('dark');this.textContent=document.documentElement.classList.contains('dark')?'☀️ Світла':'🌙 Темна'"
+  style="position:fixed;top:12px;right:12px;z-index:99;border:1px solid rgba(128,120,110,.4);
+  background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer;
+  font-size:13px;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12)">🌙 Темна</button>
+<div class="stage">
+  <div class="frame touch" style="width:834px;border-radius:18px">
+<header class="appbar" style="display:flex;align-items:center;gap:8px;padding:10px 16px;flex-wrap:nowrap">
+  <input class="input-field" value="Колискова" aria-label="Назва проєкту" style="flex:1;min-width:110px;max-width:200px;font-family:Georgia,serif">
+  <button class="chip tappable" style="cursor:pointer;background:var(--surface);max-width:180px;overflow:hidden">
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">2/4 (авто) · Соль мажор · 66 BPM · Скрипка</span>
+  </button>
+  <span style="flex:1"></span>
+  <button class="btn btn-ghost" aria-label="Скасувати">↩</button>
+  <button class="btn btn-ghost" aria-label="Повернути">↪</button>
+  <button class="btn btn-secondary" aria-label="Зберегти">💾</button>
+  <button class="btn btn-secondary">Файл ▾</button>
+  <button class="btn btn-secondary">Експорт ▾</button>
+  <button class="btn btn-ghost" aria-label="Ще">⋯</button>
+</header>
+<div style="flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:12px">
+  <div class="card" style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(0,0,0,.08)">
+  <span class="stepper">
+    <button class="btn btn-ghost" aria-label="Попередня нота">◀</button>
+    <span class="note-name" style="min-width:88px;text-align:center">Ля₄ · A4</span>
+    <button class="btn btn-ghost" aria-label="Наступна нота">▶</button>
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:6px">
+    <span style="font-size:12px;color:var(--ink-soft)">Висота</span>
+    <button class="btn btn-secondary" aria-label="Нижче">−</button>
+    <button class="btn btn-secondary" aria-label="Вище">+</button>
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:6px">
+    <span style="font-size:12px;color:var(--ink-soft)">Октава</span>
+    <button class="btn btn-secondary" aria-label="Октава нижче">−</button>
+    <button class="btn btn-secondary" aria-label="Октава вище">+</button>
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:6px">
+    <span style="font-size:12px;color:var(--ink-soft)">Тривалість</span>
+    <span class="seg">
+      <button class="btn">1</button><button class="btn">1/2</button><button class="btn on acc">1/4</button><button class="btn">1/8</button><button class="btn">1/16</button>
+    </span>
+  </span>
+  <span style="flex:1"></span>
+  <button class="btn btn-secondary">+ Пауза</button>
+  <button class="btn btn-danger-outline">Видалити</button>
+</div>
+  <div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <button class="btn btn-ghost" aria-label="Вся мелодія на октаву вгору">8va ↑</button>
+    <button class="btn btn-ghost" aria-label="Вся мелодія на октаву вниз">8vb ↓</button>
+    <span style="flex:1"></span>
+    <span class="stepper">
+      <button class="btn btn-ghost" aria-label="Зменшити масштаб">−</button>
+      <span style="font-size:12px;color:var(--ink-soft);min-width:38px;text-align:center">100%</span>
+      <button class="btn btn-ghost" aria-label="Збільшити масштаб">+</button>
+    </span>
+  </div>
+    <div class="sheet" style="padding:14px"><svg viewBox="0 0 900 242" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Нотний запис (макет)"><line x1="14" y1="46" x2="886" y2="46" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="55" x2="886" y2="55" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="64" x2="886" y2="64" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="73" x2="886" y2="73" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="82" x2="886" y2="82" stroke="var(--staff)" stroke-width="1"/><text x="18" y="80" font-size="48.6" fill="var(--staff)" font-family="serif">𝄞</text><text x="54" y="63" font-size="20.7" font-weight="700" fill="var(--staff)" font-family="serif" text-anchor="middle">4</text><text x="54" y="81" font-size="20.7" font-weight="700" fill="var(--staff)" font-family="serif" text-anchor="middle">4</text><line x1="343.3333333333333" y1="46" x2="343.3333333333333" y2="82" stroke="var(--staff)" stroke-width="1"/><ellipse cx="109.98666666666666" cy="91" rx="5.4" ry="4" transform="rotate(-18 109.98666666666666 91)" fill="var(--staff)"/><line x1="114.78666666666666" y1="89.5" x2="114.78666666666666" y2="61" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="169.68" cy="73" rx="5.4" ry="4" transform="rotate(-18 169.68 73)" fill="var(--staff)"/><line x1="174.48000000000002" y1="71.5" x2="174.48000000000002" y2="43" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="229.37333333333333" cy="82" rx="5.4" ry="4" transform="rotate(-18 229.37333333333333 82)" fill="var(--staff)"/><line x1="234.17333333333335" y1="80.5" x2="234.17333333333335" y2="52" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="289.06666666666666" cy="91" rx="5.4" ry="4" transform="rotate(-18 289.06666666666666 91)" fill="var(--staff)"/><line x1="293.8666666666667" y1="89.5" x2="293.8666666666667" y2="61" stroke="var(--staff)" stroke-width="1.6"/><line x1="614.6666666666666" y1="46" x2="614.6666666666666" y2="82" stroke="var(--staff)" stroke-width="1"/><circle cx="381.32" cy="73" r="15" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-opacity=".45" stroke-width="1.5"/><ellipse cx="381.32" cy="73" rx="5.4" ry="4" transform="rotate(-18 381.32 73)" fill="var(--accent)"/><line x1="386.12" y1="71.5" x2="386.12" y2="43" stroke="var(--accent)" stroke-width="1.6"/><ellipse cx="441.0133333333333" cy="64" rx="5.4" ry="4" transform="rotate(-18 441.0133333333333 64)" fill="var(--staff)"/><line x1="445.81333333333333" y1="62.5" x2="445.81333333333333" y2="34" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="500.70666666666665" cy="73" rx="5.4" ry="4" transform="rotate(-18 500.70666666666665 73)" fill="var(--staff)"/><line x1="505.50666666666666" y1="71.5" x2="505.50666666666666" y2="43" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="560.4" cy="91" rx="5.4" ry="4" transform="rotate(-18 560.4 91)" fill="var(--staff)"/><line x1="565.1999999999999" y1="89.5" x2="565.1999999999999" y2="61" stroke="var(--staff)" stroke-width="1.6"/><line x1="886" y1="46" x2="886" y2="82" stroke="var(--staff)" stroke-width="1"/><ellipse cx="652.6533333333333" cy="82" rx="5.4" ry="4" transform="rotate(-18 652.6533333333333 82)" fill="var(--staff)"/><line x1="657.4533333333333" y1="80.5" x2="657.4533333333333" y2="52" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="712.3466666666666" cy="73" rx="5.4" ry="4" transform="rotate(-18 712.3466666666666 73)" fill="var(--staff)"/><line x1="717.1466666666665" y1="71.5" x2="717.1466666666665" y2="43" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="772.04" cy="64" rx="5.4" ry="4" transform="rotate(-18 772.04 64)" fill="var(--staff)"/><line x1="776.8399999999999" y1="62.5" x2="776.8399999999999" y2="34" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="831.7333333333333" cy="55" rx="5.4" ry="4" transform="rotate(-18 831.7333333333333 55)" fill="var(--staff)"/><line x1="826.9333333333334" y1="56.5" x2="826.9333333333334" y2="85" stroke="var(--staff)" stroke-width="1.6"/><line x1="14" y1="164" x2="886" y2="164" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="173" x2="886" y2="173" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="182" x2="886" y2="182" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="191" x2="886" y2="191" stroke="var(--staff)" stroke-width="1"/><line x1="14" y1="200" x2="886" y2="200" stroke="var(--staff)" stroke-width="1"/><text x="18" y="198" font-size="48.6" fill="var(--staff)" font-family="serif">𝄞</text><line x1="331.3333333333333" y1="164" x2="331.3333333333333" y2="200" stroke="var(--staff)" stroke-width="1"/><ellipse cx="92.82666666666667" cy="182" rx="5.4" ry="4" transform="rotate(-18 92.82666666666667 182)" fill="var(--staff)"/><line x1="97.62666666666667" y1="180.5" x2="97.62666666666667" y2="152" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="153.83999999999997" cy="191" rx="5.4" ry="4" transform="rotate(-18 153.83999999999997 191)" fill="var(--staff)"/><line x1="158.64" y1="189.5" x2="158.64" y2="161" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="214.85333333333335" cy="200" rx="5.4" ry="4" transform="rotate(-18 214.85333333333335 200)" fill="var(--staff)"/><line x1="219.65333333333336" y1="198.5" x2="219.65333333333336" y2="170" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="275.8666666666667" cy="209" rx="5.4" ry="4" transform="rotate(-18 275.8666666666667 209)" fill="var(--staff)"/><line x1="280.6666666666667" y1="207.5" x2="280.6666666666667" y2="179" stroke="var(--staff)" stroke-width="1.6"/><line x1="608.6666666666666" y1="164" x2="608.6666666666666" y2="200" stroke="var(--staff)" stroke-width="1"/><ellipse cx="370.15999999999997" cy="209" rx="5.4" ry="4" transform="rotate(-18 370.15999999999997 209)" fill="var(--staff)"/><line x1="374.96" y1="207.5" x2="374.96" y2="179" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="431.1733333333333" cy="191" rx="5.4" ry="4" transform="rotate(-18 431.1733333333333 191)" fill="var(--staff)"/><line x1="435.9733333333333" y1="189.5" x2="435.9733333333333" y2="161" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="492.18666666666667" cy="200" rx="5.4" ry="4" transform="rotate(-18 492.18666666666667 200)" fill="var(--staff)"/><line x1="496.9866666666667" y1="198.5" x2="496.9866666666667" y2="170" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="553.2" cy="209" rx="5.4" ry="4" transform="rotate(-18 553.2 209)" fill="var(--staff)"/><line x1="558" y1="207.5" x2="558" y2="179" stroke="var(--staff)" stroke-width="1.6"/><line x1="886" y1="164" x2="886" y2="200" stroke="var(--staff)" stroke-width="2.5"/><ellipse cx="647.4933333333333" cy="191" rx="5.4" ry="4" transform="rotate(-18 647.4933333333333 191)" fill="var(--staff)"/><line x1="652.2933333333333" y1="189.5" x2="652.2933333333333" y2="161" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="708.5066666666667" cy="182" rx="5.4" ry="4" transform="rotate(-18 708.5066666666667 182)" fill="var(--staff)"/><line x1="713.3066666666666" y1="180.5" x2="713.3066666666666" y2="152" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="769.52" cy="191" rx="5.4" ry="4" transform="rotate(-18 769.52 191)" fill="var(--staff)"/><line x1="774.3199999999999" y1="189.5" x2="774.3199999999999" y2="161" stroke="var(--staff)" stroke-width="1.6"/><ellipse cx="830.5333333333333" cy="209" rx="5.4" ry="4" transform="rotate(-18 830.5333333333333 209)" fill="var(--staff)"/><line x1="835.3333333333333" y1="207.5" x2="835.3333333333333" y2="179" stroke="var(--staff)" stroke-width="1.6"/></svg></div>
+  </div>
+</div>
+<div class="bottombar" style="padding:10px 24px;display:flex;align-items:center;gap:12px">
+  <button class="btn btn-primary">▶ Грати</button>
+  <button class="btn btn-secondary">■ Стоп</button>
+  <span style="font-size:13px;color:var(--ink-soft)">Готово · 8 тактів · 0:12</span>
+  <span style="flex:1"></span>
+  <button class="btn btn-ghost" aria-pressed="false">🎵 Метроном</button>
+  <label style="font-size:13px;color:var(--ink-soft)">BPM</label>
+  <input class="input-field" value="66" style="width:64px">
+  <button class="btn btn-secondary">Настукати темп</button>
+</div></div>
+  <div class="frame-label">iPad · 834px · режим дотику · нота вибрана</div>
+</div><p class="caption" style="margin-top:16px">Метадані згорнуто в один тапабельний чіп; «(авто)» біля розміру означає авто-визначений метр — тап відкриває поповер із вибором 2/4·3/4·4/4·6/8 і перерахунком в один клік (U35). Тема/мова/довідка — в «⋯». Картка редагування ноти має степери ◀/▶ і збільшені кнопки.</p>
+</body></html>
