@@ -204,6 +204,20 @@ export const en = {
   scDeselect: 'Deselect',
   scPlay: 'Play / stop',
   scHelp: 'Show this help',
+
+  // Responsive editor header (U-E redesign)
+  fileMenu: 'File',
+  fileMenuTitle: 'File actions',
+  exportMenu: 'Export',
+  exportMenuTitle: 'Export actions',
+  moreMenuTitle: 'More',
+  metadataSummaryTitle: 'Transcription details — tap to change the meter',
+  autosaved: 'Autosaved',
+  newProjectConfirm: 'Discard the current transcription and start a new one?',
+  importMusicXmlLabel: 'Import MusicXML',
+  themeLight: 'Light',
+  themeDark: 'Dark',
+  themeAuto: 'Auto',
 } as const;
 
 export type TranslationKey = keyof typeof en;

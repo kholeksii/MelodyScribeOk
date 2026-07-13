@@ -1,11 +1,13 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useUiStore } from '../store/uiStore';
 import { apiClient } from '../services/apiClient';
 import { exportScorePdf } from '../services/pdfExport';
 import { useT, localizeError } from '../i18n';
 
-export const ExportButton: React.FC = () => {
+/** PDF/MusicXML export + MusicXML import, shared by the editor header's
+ * Export menu (and, previously, the standalone ExportButton). */
+export function useExportActions() {
   const t = useT();
   const language = useUiStore((s) => s.language);
   const notes = useProjectStore((state) => state.notes);
@@ -16,6 +18,8 @@ export const ExportButton: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const canExport = Boolean(notes.length && metadata);
 
   const buildProject = () => ({
     version: '1.0' as const,
@@ -39,7 +43,7 @@ export const ExportButton: React.FC = () => {
   });
 
   const handleExportPDF = async () => {
-    if (!notes.length || !metadata) return;
+    if (!canExport) return;
     setIsExporting(true);
     setError(null);
     try {
@@ -48,8 +52,8 @@ export const ExportButton: React.FC = () => {
         setError(t('svgNotFound'));
         return;
       }
-      const doc = await exportScorePdf(svgEl, metadata, t, language);
-      doc.save(`${metadata.title.replace(/\s+/g, '_')}.pdf`);
+      const doc = await exportScorePdf(svgEl, metadata!, t, language);
+      doc.save(`${metadata!.title.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       setError(localizeError(err, t) || t('pdfExportFailed'));
     } finally {
@@ -58,7 +62,7 @@ export const ExportButton: React.FC = () => {
   };
 
   const handleExportMusicXML = async () => {
-    if (!notes.length || !metadata) return;
+    if (!canExport) return;
     setIsExporting(true);
     setError(null);
     try {
@@ -66,7 +70,7 @@ export const ExportButton: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${metadata.title.replace(/\s+/g, '_')}.musicxml`;
+      link.download = `${metadata!.title.replace(/\s+/g, '_')}.musicxml`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -101,45 +105,14 @@ export const ExportButton: React.FC = () => {
     }
   };
 
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <button
-        onClick={handleExportPDF}
-        disabled={isExporting || !notes.length}
-        className="btn-primary"
-        title={t('exportPdfTitle')}
-      >
-        {isExporting ? `⟳ ${t('exporting')}` : t('exportPdf')}
-      </button>
-
-      <button
-        onClick={handleExportMusicXML}
-        disabled={isExporting || !notes.length}
-        className="btn-secondary"
-        title={t('exportMusicXmlTitle')}
-      >
-        {isExporting ? `⟳ ${t('exporting')}` : 'MusicXML'}
-      </button>
-
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isImporting}
-        className="btn-secondary"
-        title={t('importTitle')}
-      >
-        {isImporting ? `⟳ ${t('importing')}` : t('importLabel')}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".musicxml,.xml,.mxl"
-        className="hidden"
-        onChange={handleImportMusicXML}
-      />
-
-      {error && (
-        <span className="text-sm text-danger font-medium">{error}</span>
-      )}
-    </div>
-  );
-};
+  return {
+    canExport,
+    isExporting,
+    isImporting,
+    error,
+    fileInputRef,
+    handleExportPDF,
+    handleExportMusicXML,
+    handleImportMusicXML,
+  };
+}

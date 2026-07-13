@@ -1,6 +1,7 @@
 import React from 'react';
 import { useT } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
+import { VersionBadge } from './VersionBadge';
 
 interface ShortcutHelpProps {
   visible: boolean;
@@ -57,6 +58,9 @@ export const ShortcutHelp: React.FC<ShortcutHelpProps> = ({ visible, onClose }) 
             ))}
           </tbody>
         </table>
+        <div className="mt-4 border-t border-ink-soft/10 pt-3">
+          <VersionBadge />
+        </div>
       </div>
     </div>
   );
