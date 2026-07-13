@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileUpload } from './components/AudioControls/FileUpload';
+import { RecordButton } from './components/AudioControls/RecordButton';
 import { InstrumentSelector } from './components/AudioControls/InstrumentSelector';
 import { TranscribeOptions } from './components/AudioControls/TranscribeOptions';
-import { Toolbar } from './components/Toolbar/Toolbar';
 import { EditorScreen } from './components/EditorScreen';
 import { useProjectStore } from './store/projectStore';
 import { useToast } from './components/Toast';
@@ -16,6 +16,8 @@ import { apiClient } from './services/apiClient';
 import { startAutosave } from './services/autosave';
 import { useApplyTheme } from './hooks/useTheme';
 import { useAudioUpload } from './hooks/useAudioUpload';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { useProjectFileActions } from './hooks/useProjectFileActions';
 import { useT, localizeError, instrumentLabel } from './i18n';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
 import demoAudioUrl from './assets/demo-do-mi-re-do.wav?url';
@@ -31,6 +33,9 @@ function App() {
   const [optKey, setOptKey] = useState('');
   const { showToast } = useToast();
   const t = useT();
+  const isTabletUp = useMediaQuery('(min-width: 640px)');
+  const isDesktopUp = useMediaQuery('(min-width: 1024px)');
+  const { handleOpenClick, handleOpenFile, openFileRef } = useProjectFileActions();
 
   const {
     notes,
@@ -151,6 +156,105 @@ function App() {
     );
   }
 
+  const demoButton = (
+    <button
+      onClick={handleTryDemo}
+      disabled={isDemoLoading || isTranscribing}
+      className="btn-ghost text-sm"
+    >
+      {isDemoLoading ? `⟳ ${t('demoLoading')}` : `🎹 ${t('tryDemo')}`}
+    </button>
+  );
+
+  const optionsAndInstrument = (
+    <div className="flex w-full flex-col items-center gap-4">
+      <InstrumentSelector value={instrument} onChange={setInstrument} />
+      <TranscribeOptions
+        bpm={optBpm}
+        setBpm={setOptBpm}
+        timeSignature={optTimeSignature}
+        setTimeSignature={setOptTimeSignature}
+        musicalKey={optKey}
+        setMusicalKey={setOptKey}
+      />
+    </div>
+  );
+
+  const errorBlock = error && (
+    <div className="mt-6 w-full rounded-md border border-danger/30 bg-danger/10 p-4">
+      <p className="text-sm text-danger">{error}</p>
+    </div>
+  );
+
+  const transcribeButton = audioFileId && (
+    <button
+      onClick={handleTranscribe}
+      disabled={isTranscribing}
+      className="btn-primary tap-target w-full justify-center px-6 text-base"
+    >
+      {isTranscribing ? t('transcribing') : t('transcribe')}
+    </button>
+  );
+
+  let content: React.ReactNode;
+  if (!isTabletUp) {
+    // Phone: record leads, dropzone with compact copy, sticky Transcribe above the safe area
+    content = (
+      <div className="flex w-full flex-col items-center gap-4 pb-24 text-center">
+        <RecoveryBanner />
+        <RecordButton onUploadComplete={handleUploadComplete} size="large" />
+        <FileUpload onUploadComplete={handleUploadComplete} compact />
+        {demoButton}
+        {optionsAndInstrument}
+        {errorBlock}
+        <RecentProjects />
+        {transcribeButton && (
+          <div
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-soft/15 bg-paper-dark/95 px-4 py-3 shadow-sm backdrop-blur"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+          >
+            {transcribeButton}
+          </div>
+        )}
+      </div>
+    );
+  } else if (!isDesktopUp) {
+    // Tablet: recents above, dropzone + record side by side (60/40)
+    content = (
+      <div className="flex w-full flex-col items-center gap-4 text-center">
+        <RecoveryBanner />
+        <RecentProjects />
+        <div className="grid w-full grid-cols-[3fr_2fr] items-start gap-4">
+          <FileUpload onUploadComplete={handleUploadComplete} />
+          <RecordButton onUploadComplete={handleUploadComplete} size="large" />
+        </div>
+        {demoButton}
+        {optionsAndInstrument}
+        {transcribeButton}
+        {errorBlock}
+      </div>
+    );
+  } else {
+    // Desktop: current layout, unchanged
+    content = (
+      <div className="flex w-full flex-col items-center gap-4 text-center">
+        <RecoveryBanner />
+        <RecentProjects />
+        <FileUpload onUploadComplete={handleUploadComplete} />
+        <div className="flex items-center gap-3 w-full max-w-md">
+          <div className="flex-1 h-px bg-ink-soft/30" />
+          <span className="text-xs text-ink-soft/60 uppercase">{t('or')}</span>
+          <div className="flex-1 h-px bg-ink-soft/30" />
+        </div>
+        <RecordButton onUploadComplete={handleUploadComplete} />
+        {demoButton}
+        {optionsAndInstrument}
+        {transcribeButton}
+        {errorBlock}
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-paper"
@@ -174,62 +278,25 @@ function App() {
 
       {/* Header */}
       <header className="bg-paper-dark shadow-sm border-b border-ink-soft/15">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
-              <VersionBadge />
-            </div>
-            <div className="flex items-center gap-3">
-              <Toolbar />
-              <ThemeToggle />
-              <LanguageSwitcher />
-            </div>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-2xl font-bold text-ink">MelodyScribe</h1>
+            <VersionBadge />
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleOpenClick} className="btn-secondary" title={t('openTitle')}>
+              {t('open')}
+            </button>
+            <input ref={openFileRef} type="file" accept=".melody" className="hidden" onChange={handleOpenFile} />
+            <ThemeToggle />
+            <LanguageSwitcher />
           </div>
         </div>
       </header>
 
       {/* Upload screen */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <RecoveryBanner />
-          <RecentProjects />
-          <FileUpload onUploadComplete={handleUploadComplete} />
-          <div className="mt-4 max-w-md mx-auto">
-            <button
-              onClick={handleTryDemo}
-              disabled={isDemoLoading || isTranscribing}
-              className="btn-ghost text-sm"
-            >
-              {isDemoLoading ? `⟳ ${t('demoLoading')}` : `🎹 ${t('tryDemo')}`}
-            </button>
-          </div>
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <InstrumentSelector value={instrument} onChange={setInstrument} />
-            <TranscribeOptions
-              bpm={optBpm}
-              setBpm={setOptBpm}
-              timeSignature={optTimeSignature}
-              setTimeSignature={setOptTimeSignature}
-              musicalKey={optKey}
-              setMusicalKey={setOptKey}
-            />
-            {audioFileId && (
-              <button
-                onClick={handleTranscribe}
-                disabled={isTranscribing}
-                className="btn-primary px-6 py-3 text-base"
-              >
-                {isTranscribing ? t('transcribing') : t('transcribe')}
-              </button>
-            )}
-          </div>
-          {error && (
-            <div className="mt-6 p-4 bg-danger/10 border border-danger/30 rounded-md">
-              <p className="text-sm text-danger">{error}</p>
-            </div>
-          )}
-        </div>
+      <main className="mx-auto w-full px-4 py-8 sm:max-w-xl lg:max-w-2xl">
+        {content}
       </main>
     </div>
   );

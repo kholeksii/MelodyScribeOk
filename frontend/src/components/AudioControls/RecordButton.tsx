@@ -8,9 +8,11 @@ import { useT, localizeError } from '../../i18n';
 
 interface RecordButtonProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
+  /** Phone leads with a large primary record action (SPEC.md §5). */
+  size?: 'default' | 'large';
 }
 
-export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) => {
+export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete, size = 'default' }) => {
   const { state, elapsedSec, error, start, stop } = useAudioRecorder();
   const setAudioBlob = useProjectStore((s) => s.setAudioBlob);
   const { showToast } = useToast();
@@ -37,15 +39,19 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete }) 
       <button
         onClick={handleClick}
         disabled={state === 'processing'}
-        className={`px-5 py-2.5 rounded-full font-medium text-sm transition-all ${
+        className={`tap-target rounded-full font-medium transition-all ${
+          size === 'large' ? 'min-h-14 w-full px-6 text-base' : 'px-5 py-2.5 text-sm'
+        } ${
           state === 'recording'
             ? 'bg-danger hover:opacity-90 text-white animate-pulse'
             : state === 'processing'
               ? 'bg-ink-soft/50 text-white cursor-not-allowed'
-              : 'bg-ink-soft hover:opacity-90 text-white'
+              : size === 'large'
+                ? 'bg-accent hover:bg-accent-hover text-white'
+                : 'bg-ink-soft hover:opacity-90 text-white'
         }`}
       >
-        {state === 'idle' && t('record')}
+        {state === 'idle' && `🎙 ${t('record')}`}
         {state === 'recording' && t('recordingStop', { s: elapsedSec })}
         {state === 'processing' && t('processing')}
       </button>

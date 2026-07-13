@@ -13,6 +13,7 @@ export const en = {
   // FileUpload / RecordButton
   uploadTitle: 'Upload audio file',
   uploadHint: 'Drag and drop or click to select WAV, MP3, FLAC, OGG, or M4A file',
+  uploadHintCompact: 'Tap to choose a file',
   chooseFile: 'Choose file',
   uploading: 'Uploading...',
   uploadFailed: 'Upload failed',
