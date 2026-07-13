@@ -7,13 +7,18 @@ import { ShortcutHelp } from './ShortcutHelp';
 import { EditorHeader } from './EditorHeader';
 import { useProjectStore } from '../store/projectStore';
 import { useKeyboardEditing } from '../hooks/useKeyboardEditing';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useT } from '../i18n';
 
 export const EditorScreen: React.FC = () => {
   const [showWaveform, setShowWaveform] = useState(true);
   const t = useT();
+  const isTabletUp = useMediaQuery('(min-width: 640px)');
   const { helpVisible, setHelpVisible } = useKeyboardEditing();
   const { notes, metadata, selectedNoteId, undo, redo } = useProjectStore();
+  // Phone's note-edit sheet covers the bottom of the screen — hide the
+  // playback bar underneath it while it's open (SPEC.md §4).
+  const hidePlaybackBar = !isTabletUp && Boolean(selectedNoteId);
 
   // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Shift+Z = redo
   useEffect(() => {
@@ -67,11 +72,13 @@ export const EditorScreen: React.FC = () => {
       </main>
 
       {/* Bottom bar: playback transport */}
-      <footer className="sticky bottom-0 z-30 border-t border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-          <PlaybackControls bpm={metadata?.tempo || 120} />
-        </div>
-      </footer>
+      {!hidePlaybackBar && (
+        <footer className="sticky bottom-0 z-30 border-t border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
+          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+            <PlaybackControls bpm={metadata?.tempo || 120} />
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
