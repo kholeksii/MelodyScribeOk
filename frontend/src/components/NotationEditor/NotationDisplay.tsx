@@ -17,19 +17,31 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
 }) => {
   const selectedNoteId = useProjectStore((state) => state.selectedNoteId);
   const setSelectedNote = useProjectStore((state) => state.setSelectedNote);
+  const shiftAllOctaves = useProjectStore((state) => state.shiftAllOctaves);
   const { containerRef } = useNotationRenderer({ notes, timeSignature, keySignature });
   const t = useT();
 
   return (
     <div className="w-full notation-display">
-      <h2 className="text-lg font-semibold mb-2 text-ink">
-        {t('notationEditor')} — {t('notesCount', { n: notes.length })}
-        {selectedNoteId && (
-          <span className="ml-3 text-sm text-accent font-normal">
-            ({t('selected')}: {notes.find((n) => n.id === selectedNoteId)?.pitch})
-          </span>
-        )}
-      </h2>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-ink">
+          {t('notationEditor')} — {t('notesCount', { n: notes.length })}
+          {selectedNoteId && (
+            <span className="ml-3 text-sm text-accent font-normal">
+              ({t('selected')}: {notes.find((n) => n.id === selectedNoteId)?.pitch})
+            </span>
+          )}
+        </h2>
+        {/* Whole-melody transpose — a score-level action, not tied to note selection */}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => shiftAllOctaves(1)} title={t('allUpTitle')} className="btn-ghost text-xs">
+            ↑ {t('allUp')}
+          </button>
+          <button onClick={() => shiftAllOctaves(-1)} title={t('allDownTitle')} className="btn-ghost text-xs">
+            ↓ {t('allDown')}
+          </button>
+        </div>
+      </div>
       <div className="mb-2 text-sm text-ink-soft">
         {t('time')}: {timeSignature} | {t('key')}: {keySignature}
       </div>
