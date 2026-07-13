@@ -15,7 +15,7 @@ export const EditorScreen: React.FC = () => {
   const t = useT();
   const isTabletUp = useMediaQuery('(min-width: 640px)');
   const { helpVisible, setHelpVisible } = useKeyboardEditing();
-  const { notes, metadata, selectedNoteId, undo, redo } = useProjectStore();
+  const { notes, metadata, selectedNoteId, undo, redo, canUndo, canRedo } = useProjectStore();
   // Phone's note-edit sheet covers the bottom of the screen — hide the
   // playback bar underneath it while it's open (SPEC.md §4).
   const hidePlaybackBar = !isTabletUp && Boolean(selectedNoteId);
@@ -74,8 +74,14 @@ export const EditorScreen: React.FC = () => {
       {/* Bottom bar: playback transport */}
       {!hidePlaybackBar && (
         <footer className="sticky bottom-0 z-30 border-t border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
-          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-            <PlaybackControls bpm={metadata?.tempo || 120} />
+          <div className="mx-auto max-w-7xl sm:px-6 sm:py-3 lg:px-8">
+            <PlaybackControls
+              bpm={metadata?.tempo || 120}
+              undo={undo}
+              redo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
           </div>
         </footer>
       )}
