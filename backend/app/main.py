@@ -26,6 +26,9 @@ app.add_middleware(
         "file://",
         "null",
     ],
+    # Same-machine dev server reached from another device on the LAN (e.g.
+    # an iPad), still restricted to private network ranges + Vite's dev ports.
+    allow_origin_regex=r"^http://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):517\d$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,6 +1,15 @@
 import { AudioInfo, Correction, Instrument, TranscriptionData, NoteData, Project } from '../types';
 
-const BASE_URL = 'http://localhost:8000/api';
+// Same host the frontend was loaded from (localhost in normal dev, or the
+// machine's LAN IP when accessed from another device like an iPad), backend
+// port. Packaged Electron loads the renderer via file:// (no usable host),
+// and the bundled backend always runs on the same machine, so that case —
+// and any non-browser context — falls back to localhost.
+const backendHost =
+  typeof window !== 'undefined' && window.location.protocol.startsWith('http')
+    ? window.location.hostname
+    : 'localhost';
+const BASE_URL = `http://${backendHost}:8000/api`;
 
 /** Note shape as serialized by the Python backend (snake_case). */
 interface BackendNote {
