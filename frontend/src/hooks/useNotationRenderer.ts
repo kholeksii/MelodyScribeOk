@@ -17,6 +17,16 @@ interface UseNotationRendererArgs {
   keySignature: string;
 }
 
+const ACCENT_RGB = '124, 92, 191';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Responsive tier, matching vexflowRenderer's breakpoints (SPEC.md §2/§3). */
+function tierOf(width: number): number {
+  if (width < 640) return 0;
+  if (width < 1024) return 1;
+  return 2;
+}
+
 /** Renders the score into the returned container, wires click/hover
  * hit-testing to the project store selection, and repaints note colors
  * for playing/selected/hovered/confidence states. */
@@ -28,30 +38,54 @@ export function useNotationRenderer({ notes, timeSignature, keySignature }: UseN
   const playingNoteId = useProjectStore((state) => state.playingNoteId);
   const setSelectedNote = useProjectStore((state) => state.setSelectedNote);
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Calculate bounding boxes from SVG elements
+  // Observe the container's width, debounced; the render effect below only
+  // reacts to the derived tier (see deps), not every pixel (SPEC.md §3).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    setContainerWidth(el.getBoundingClientRect().width);
+
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (!width) return;
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => setContainerWidth(width), 200);
+    });
+    observer.observe(el);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      observer.disconnect();
+    };
+  }, []);
+
+  const tier = tierOf(containerWidth);
+
+  // Hit zones injected by renderScore (one per note, full slot × stave height)
   const calculateBoundingBoxes = () => {
     if (!svgRef.current) return;
 
     noteBoundingBoxes.current.clear();
-    const noteheads = svgRef.current.querySelectorAll('.vf-notehead');
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const hitZones = svgRef.current.querySelectorAll<SVGGraphicsElement>('.vf-hit-zone');
 
-    noteheads.forEach((element, index) => {
-      if (index < notes.length) {
-        const rect = element.getBoundingClientRect();
-        const svgRect = svgRef.current!.getBoundingClientRect();
-
-        const noteId = notes[index].id;
-        noteBoundingBoxes.current.set(noteId, {
-          x: rect.left - svgRect.left,
-          y: rect.top - svgRect.top,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
+    hitZones.forEach((element) => {
+      const noteId = element.getAttribute('data-note-id');
+      if (!noteId) return;
+      const rect = element.getBoundingClientRect();
+      noteBoundingBoxes.current.set(noteId, {
+        x: rect.left - svgRect.left,
+        y: rect.top - svgRect.top,
+        width: rect.width,
+        height: rect.height,
+      });
     });
 
-    console.log('📍 Bounding boxes calculated:', noteBoundingBoxes.current.size);
+    console.log('📍 Hit zones calculated:', noteBoundingBoxes.current.size);
   };
 
   const findNoteAtCoordinates = (x: number, y: number): string | null => {
@@ -98,8 +132,9 @@ export function useNotationRenderer({ notes, timeSignature, keySignature }: UseN
   // Priority: playing > selected > hovered > confidence heatmap
   const highlightSelectedNote = () => {
     if (!svgRef.current) return;
+    const svg = svgRef.current;
 
-    const noteheads = svgRef.current.querySelectorAll('.vf-notehead');
+    const noteheads = svg.querySelectorAll<SVGGraphicsElement>('.vf-notehead');
     noteheads.forEach((element, index) => {
       if (index >= notes.length) return;
       const note = notes[index];
@@ -130,13 +165,32 @@ export function useNotationRenderer({ notes, timeSignature, keySignature }: UseN
         (stem as SVGElement).setAttribute('opacity', opacity);
       }
     });
+
+    // Selection halo (SPEC.md §3): a soft accent ring so selection reads at
+    // small scale, even when the notehead color change alone is subtle.
+    svg.querySelectorAll('.vf-selection-halo').forEach((el) => el.remove());
+    const selectedIndex = selectedNoteId ? notes.findIndex((n) => n.id === selectedNoteId) : -1;
+    const selectedEl = selectedIndex >= 0 ? noteheads[selectedIndex] : null;
+    if (selectedEl) {
+      const bbox = selectedEl.getBBox();
+      const halo = document.createElementNS(SVG_NS, 'circle');
+      halo.setAttribute('cx', String(bbox.x + bbox.width / 2));
+      halo.setAttribute('cy', String(bbox.y + bbox.height / 2));
+      halo.setAttribute('r', '15');
+      halo.setAttribute('fill', `rgba(${ACCENT_RGB}, 0.14)`);
+      halo.setAttribute('stroke', `rgba(${ACCENT_RGB}, 0.45)`);
+      halo.setAttribute('stroke-width', '1.5');
+      halo.classList.add('vf-selection-halo');
+      svg.insertBefore(halo, svg.firstChild);
+    }
   };
 
   useEffect(() => {
-    if (!containerRef.current || !notes.length) {
-      console.log('NotationEditor: container or notes empty', {
+    if (!containerRef.current || !notes.length || containerWidth === 0) {
+      console.log('NotationEditor: container, notes, or width not ready', {
         containerRef: !!containerRef.current,
         notesLength: notes.length,
+        containerWidth,
       });
       return;
     }
@@ -144,15 +198,20 @@ export function useNotationRenderer({ notes, timeSignature, keySignature }: UseN
     console.log('NotationEditor: rendering notes', {
       notesLength: notes.length,
       firstNote: notes[0],
+      tier,
     });
 
     // Clear previous content
     containerRef.current.innerHTML = '';
 
-    renderScore(containerRef.current, notes, timeSignature, keySignature, {
-      onClick: handleSvgClick,
-      onMouseMove: handleSvgMouseMove,
-    }).then((svg) => {
+    renderScore(
+      containerRef.current,
+      notes,
+      timeSignature,
+      keySignature,
+      { onClick: handleSvgClick, onMouseMove: handleSvgMouseMove },
+      containerWidth,
+    ).then((svg) => {
       svgRef.current = svg;
       if (!svg) return;
       // Add highlighting for selected/hovered notes
@@ -161,8 +220,9 @@ export function useNotationRenderer({ notes, timeSignature, keySignature }: UseN
         highlightSelectedNote();
       }, 100);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- render only on score changes; handlers/highlight are stable per render
-  }, [notes, timeSignature, keySignature]);
+    // Re-render on tier change (not every pixel of containerWidth) — see ResizeObserver above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- render only on score/tier changes; handlers/highlight are stable per render
+  }, [notes, timeSignature, keySignature, tier]);
 
   // Update highlighting when playing/selection/hover changes
   useEffect(() => {
