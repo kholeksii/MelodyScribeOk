@@ -7,7 +7,13 @@ export const ThemeToggle: React.FC = () => {
   const t = useT();
 
   return (
-    <button onClick={toggle} title={t('themeToggleTitle')} className="btn-ghost" aria-pressed={isDark}>
+    <button
+      onClick={toggle}
+      title={t('themeToggleTitle')}
+      aria-label={t('themeToggleTitle')}
+      className="btn-ghost"
+      aria-pressed={isDark}
+    >
       {isDark ? '☀️' : '🌙'}
     </button>
   );

@@ -136,6 +136,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           onClick={isPlaying ? handleStop : handlePlay}
           disabled={!hasNotes && !isPlaying}
           title={isPlaying ? t('stopTitle') : hasNotes ? t('playTitle') : t('noPlayableNotes')}
+          aria-label={isPlaying ? t('stop') : t('play')}
           className="flex h-14 w-14 items-center justify-center justify-self-center rounded-full bg-accent text-xl text-white shadow-md transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPlaying ? '⏹' : '▶'}

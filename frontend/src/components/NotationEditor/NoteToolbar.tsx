@@ -118,19 +118,19 @@ export const NoteToolbar: React.FC = () => {
     <div className="grid grid-cols-2 gap-3">
       <div className="flex items-center justify-center gap-2">
         <span className="text-xs font-medium text-ink-soft">{t('pitch')}</span>
-        <button onClick={handlePitchDown} title={t('pitchDownTitle')} className="btn-secondary tap-target">
+        <button onClick={handlePitchDown} title={t('pitchDownTitle')} aria-label={t('pitchDownTitle')} className="btn-secondary tap-target">
           −
         </button>
-        <button onClick={handlePitchUp} title={t('pitchUpTitle')} className="btn-secondary tap-target">
+        <button onClick={handlePitchUp} title={t('pitchUpTitle')} aria-label={t('pitchUpTitle')} className="btn-secondary tap-target">
           +
         </button>
       </div>
       <div className="flex items-center justify-center gap-2">
         <span className="text-xs font-medium text-ink-soft">{t('octave')}</span>
-        <button onClick={handleOctaveDown} title={t('octaveDownTitle')} className="btn-secondary tap-target">
+        <button onClick={handleOctaveDown} title={t('octaveDownTitle')} aria-label={t('octaveDownTitle')} className="btn-secondary tap-target">
           −
         </button>
-        <button onClick={handleOctaveUp} title={t('octaveUpTitle')} className="btn-secondary tap-target">
+        <button onClick={handleOctaveUp} title={t('octaveUpTitle')} aria-label={t('octaveUpTitle')} className="btn-secondary tap-target">
           +
         </button>
       </div>
@@ -212,20 +212,20 @@ export const NoteToolbar: React.FC = () => {
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-ink-soft">{t('pitch')}:</span>
-          <button onClick={handlePitchDown} title={t('pitchDownTitle')} className="btn-secondary">
+          <button onClick={handlePitchDown} title={t('pitchDownTitle')} aria-label={t('pitchDownTitle')} className="btn-secondary">
             ▼
           </button>
           <span className="w-12 text-center text-sm font-semibold text-ink">{selectedNote.pitch}</span>
-          <button onClick={handlePitchUp} title={t('pitchUpTitle')} className="btn-secondary">
+          <button onClick={handlePitchUp} title={t('pitchUpTitle')} aria-label={t('pitchUpTitle')} className="btn-secondary">
             ▲
           </button>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-ink-soft">{t('octave')}:</span>
-          <button onClick={handleOctaveDown} title={t('octaveDownTitle')} className="btn-secondary">
+          <button onClick={handleOctaveDown} title={t('octaveDownTitle')} aria-label={t('octaveDownTitle')} className="btn-secondary">
             ▼
           </button>
-          <button onClick={handleOctaveUp} title={t('octaveUpTitle')} className="btn-secondary">
+          <button onClick={handleOctaveUp} title={t('octaveUpTitle')} aria-label={t('octaveUpTitle')} className="btn-secondary">
             ▲
           </button>
         </div>

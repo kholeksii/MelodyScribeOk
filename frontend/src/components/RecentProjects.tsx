@@ -67,7 +67,7 @@ export const RecentProjects: React.FC = () => {
               {clickable ? (
                 <button
                   onClick={() => openRecent(r)}
-                  title={t('openRecentTitle', { name: r.name })}
+                  aria-label={t('openRecentTitle', { name: r.name })}
                   className="flex w-full justify-between rounded px-1 py-0.5 text-left text-sm text-ink transition hover:bg-paper-dark"
                 >
                   {row}

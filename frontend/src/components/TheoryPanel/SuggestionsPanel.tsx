@@ -78,7 +78,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
         <button
           onClick={handleClose}
           className="text-ink-soft hover:text-ink text-xl font-bold"
-          title={t('closePanel')}
+          aria-label={t('closePanel')}
         >
           ✕
         </button>

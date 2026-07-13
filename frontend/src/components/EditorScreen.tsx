@@ -58,7 +58,7 @@ export const EditorScreen: React.FC = () => {
         <div className="mt-4">
           <button
             onClick={() => setShowWaveform((v) => !v)}
-            title={t('waveformToggleTitle')}
+            aria-pressed={showWaveform}
             className={`btn-ghost text-xs ${showWaveform ? 'bg-paper-dark text-ink' : ''}`}
           >
             〰 {t('waveform')}

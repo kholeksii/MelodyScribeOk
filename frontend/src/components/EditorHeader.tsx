@@ -171,7 +171,12 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
                 items={exportMenuItems}
               />
             </div>
-            <button onClick={onOpenShortcuts} title={t('shortcutsHintTitle')} className="btn-ghost">
+            <button
+              onClick={onOpenShortcuts}
+              title={t('shortcutsHintTitle')}
+              aria-label={t('shortcutsTitle')}
+              className="btn-ghost"
+            >
               ?
             </button>
             <ThemeToggle />
@@ -244,6 +249,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
               <button
                 onClick={() => setMoreOpen((v) => !v)}
                 title={t('moreMenuTitle')}
+                aria-label={t('moreMenuTitle')}
                 aria-haspopup="dialog"
                 aria-expanded={moreOpen}
                 className="btn-ghost"
@@ -298,6 +304,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
         <button
           onClick={() => setMoreOpen(true)}
           title={t('moreMenuTitle')}
+          aria-label={t('moreMenuTitle')}
           aria-haspopup="dialog"
           aria-expanded={moreOpen}
           className="btn-ghost"

@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AudioInfo } from '../../types';
 import { useAudioUpload } from '../../hooks/useAudioUpload';
 import { useT } from '../../i18n';
+import { useToast } from '../Toast';
 
 interface FileUploadProps {
   onUploadComplete: (audioInfo: AudioInfo) => void;
@@ -11,11 +12,29 @@ interface FileUploadProps {
 
 /** The drag-and-drop / click-to-choose dropzone. Composed alongside
  * `RecordButton` by the caller — their relative order changes per tier
- * (SPEC.md §5), so this component no longer bundles the "or" divider. */
+ * (SPEC.md §5), so this component no longer bundles the "or" divider.
+ *
+ * Two error patterns (SPEC.md §7): an unsupported file format is a
+ * validation problem the user can fix right here, so it renders as an
+ * inline field error under the dropzone. An actual upload failure (network,
+ * server) is an async event, so it goes to the toast channel instead. */
 export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, compact = false }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const { handleFile, isUploading, error } = useAudioUpload(onUploadComplete);
   const t = useT();
+  const { showToast } = useToast();
+  const lastToastedError = useRef<string | null>(null);
+
+  const isFormatError = error != null && error === t('unsupportedFormat');
+
+  // Route non-format errors (actual upload failures) to the toast channel
+  useEffect(() => {
+    if (error && !isFormatError && lastToastedError.current !== error) {
+      lastToastedError.current = error;
+      showToast(error, 'error');
+    }
+    if (!error) lastToastedError.current = null;
+  }, [error, isFormatError, showToast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -47,12 +66,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, compac
   return (
     <div className="w-full">
       <div
+        aria-invalid={isFormatError || undefined}
         className={`rounded-lg border-2 border-dashed text-center transition-colors ${
           compact ? 'p-6' : 'p-8'
         } ${
-          isDragOver
-            ? 'border-accent bg-accent/10'
-            : 'border-ink-soft/30 hover:border-ink-soft/60'
+          isFormatError
+            ? 'border-danger'
+            : isDragOver
+              ? 'border-accent bg-accent/10'
+              : 'border-ink-soft/30 hover:border-ink-soft/60'
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -101,11 +123,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, compac
         )}
       </div>
 
-      {error && (
-        <div className="mt-4 p-3 bg-danger/10 border border-danger/30 rounded-md">
-          <p className="text-sm text-danger">{error}</p>
-        </div>
-      )}
+      {isFormatError && <p className="field-error text-center">{error}</p>}
     </div>
   );
 };
