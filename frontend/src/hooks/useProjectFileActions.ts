@@ -6,11 +6,13 @@ import { clearAutosave } from '../services/autosave';
 import { getElectronAPI, basename } from '../services/electronBridge';
 import { Project } from '../types';
 import { useT } from '../i18n';
+import { useToast } from '../components/Toast';
 
 /** Save/open project-file handlers shared by the Toolbar (upload screen) and
  * the editor header's File menu, so both stay wired to the same logic. */
 export function useProjectFileActions() {
   const t = useT();
+  const { showToast } = useToast();
   const notes = useProjectStore((s) => s.notes);
   const metadata = useProjectStore((s) => s.metadata);
   const audioBlob = useProjectStore((s) => s.audioBlob);
@@ -56,7 +58,7 @@ export function useProjectFileActions() {
       loadFromProject(project, ab);
       addRecent(file.name, path);
     } catch (err) {
-      alert(err instanceof Error ? err.message : t('openFailed'));
+      showToast(err instanceof Error ? err.message : t('openFailed'), 'error');
     }
   };
 

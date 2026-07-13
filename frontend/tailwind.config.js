@@ -20,7 +20,9 @@ export default {
           soft: 'rgb(var(--c-ink-soft) / <alpha-value>)',      // secondary text
         },
         surface: 'rgb(var(--c-surface) / <alpha-value>)',      // cards / inputs
-        sheet: '#FFFFFF',   // the music sheet — always light, print-like
+        // The music sheet: near-white in light mode, tinted "lit page" in dark
+        // (never pure white on a dark background) — PDF export forces #FFFFFF.
+        sheet: 'rgb(var(--c-sheet) / <alpha-value>)',
         accent: {
           DEFAULT: '#7C5CBF', // primary actions
           hover: '#6A4BAD',
@@ -33,6 +35,15 @@ export default {
       fontFamily: {
         heading: ['"Fraunces Variable"', 'Georgia', 'serif'],
         sans: ['"Inter Variable"', 'system-ui', 'sans-serif'],
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease',
       },
     },
   },

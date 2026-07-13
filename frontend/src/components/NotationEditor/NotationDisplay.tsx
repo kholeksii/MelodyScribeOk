@@ -46,7 +46,7 @@ export const NotationDisplay: React.FC<NotationEditorProps> = ({
         {t('time')}: {timeSignature} | {t('key')}: {keySignature}
       </div>
       {/* The sheet is always light (print-like), so text inside uses fixed ink colors */}
-      <div className="border border-ink-soft/15 rounded-lg p-4 bg-sheet min-h-48 overflow-x-auto">
+      <div className="min-h-48 overflow-x-auto rounded-lg border border-ink-soft/15 bg-sheet p-4 dark:border-ink-soft/18 dark:shadow-lg">
         <div ref={containerRef} className="w-full" />
         {notes.length > 0 && (
           <div className="mt-4 text-xs text-[#6B675E]">

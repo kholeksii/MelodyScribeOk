@@ -13,6 +13,7 @@
     --c-ink: 43 42 38;           /* #2B2A26 */
     --c-ink-soft: 107 103 94;    /* #6B675E */
     --c-surface: 255 255 255;    /* #FFFFFF */
+    --c-sheet: 255 255 255;      /* #FFFFFF */
     color-scheme: light;
   }
 
@@ -22,6 +23,7 @@
     --c-ink: 232 228 220;        /* #E8E4DC */
     --c-ink-soft: 158 152 140;   /* #9E988C */
     --c-surface: 48 45 40;       /* #302D28 */
+    --c-sheet: 246 242 233;      /* #F6F2E9 — tinted "lit page", never pure white */
     color-scheme: dark;
   }
 
@@ -72,5 +74,11 @@
   .tap-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* Inline validation message under a control (SPEC.md §7) — paired with
+     border-danger + aria-invalid on the control itself. */
+  .field-error {
+    @apply mt-1 text-xs text-danger;
   }
 }
