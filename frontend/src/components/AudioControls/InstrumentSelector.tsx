@@ -7,32 +7,33 @@ interface InstrumentSelectorProps {
   onChange: (value: Instrument) => void;
 }
 
-export const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({
-  value,
-  onChange,
-}) => {
+const INSTRUMENTS: Instrument[] = ['violin', 'piano', 'guitar'];
+
+/** Segmented control on the app's palette tokens (was off-palette gray/blue). */
+export const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({ value, onChange }) => {
   const t = useT();
-  const instruments: { value: Instrument; label: string }[] = (
-    ['violin', 'piano', 'guitar'] as Instrument[]
-  ).map((v) => ({ value: v, label: instrumentLabel(v, t) }));
 
   return (
-    <div className="flex items-center space-x-2">
-      <label htmlFor="instrument-select" className="text-sm font-medium text-gray-700">
-        {t('instrument')}:
-      </label>
-      <select
-        id="instrument-select"
-        value={value}
-        onChange={(e) => onChange(e.target.value as Instrument)}
-        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-      >
-        {instruments.map((instrument) => (
-          <option key={instrument.value} value={instrument.value}>
-            {instrument.label}
-          </option>
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-sm font-medium text-ink-soft">{t('instrument')}</span>
+      <div role="radiogroup" aria-label={t('instrument')} className="flex overflow-hidden rounded-md border border-ink-soft/30">
+        {INSTRUMENTS.map((inst) => (
+          <button
+            key={inst}
+            type="button"
+            role="radio"
+            aria-checked={value === inst}
+            onClick={() => onChange(inst)}
+            className={`tap-target px-4 py-2 text-sm font-medium transition ${
+              value === inst
+                ? 'bg-accent text-white'
+                : 'bg-surface text-ink-soft hover:bg-paper-dark'
+            }`}
+          >
+            {instrumentLabel(inst, t)}
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 };

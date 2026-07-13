@@ -14,6 +14,7 @@ export const uk = {
   // FileUpload / RecordButton
   uploadTitle: 'Завантажте аудіофайл',
   uploadHint: 'Перетягніть файл сюди або натисніть, щоб вибрати WAV, MP3, FLAC, OGG чи M4A',
+  uploadHintCompact: 'Натисніть, щоб обрати файл',
   chooseFile: 'Вибрати файл',
   uploading: 'Завантаження…',
   uploadFailed: 'Не вдалося завантажити',
