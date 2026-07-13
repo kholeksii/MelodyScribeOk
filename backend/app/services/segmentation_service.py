@@ -180,6 +180,7 @@ class SegmentationService:
                 )
 
             logger.info(f"Quantized {len(notes)} notes")
+            logger.info(f"Duration distribution: {self._duration_histogram(notes)}")
             if pickup_beats is not None:
                 logger.info(f"Pickup measure extracted: {pickup_beats} beats")
 
@@ -262,6 +263,17 @@ class SegmentationService:
             notes, meter.time_signature
         )
         return notes, new_tempo, pickup_beats
+
+    @staticmethod
+    def _duration_histogram(notes: list[dict]) -> dict[str, int]:
+        """B2/B3 diagnostic: a lopsided count toward the shortest value
+        (e.g. almost everything landing on "sixteenth") usually means the
+        tempo used for quantization was wrong, not that the grid is."""
+        counts: dict[str, int] = {}
+        for n in notes:
+            d = n.get("duration", "?")
+            counts[d] = counts.get(d, 0) + 1
+        return dict(sorted(counts.items(), key=lambda kv: kv[1], reverse=True))
 
     @staticmethod
     def _tie_share(notes: list[dict]) -> float:

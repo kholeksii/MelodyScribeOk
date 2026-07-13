@@ -11,6 +11,14 @@ from .api.routes.transcribe import router as transcribe_router
 from .api.routes.verify import router as verify_router
 from .errors import FfmpegMissingError
 
+# Without this, every logger.info/warning in the app (transcription pipeline,
+# key/meter detection, uploads) is silently dropped — uvicorn only configures
+# its own access/error loggers, not the root logger our modules use (B2).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="MelodyScribe Backend", version="0.1.0")

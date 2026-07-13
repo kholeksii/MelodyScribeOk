@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 # Krumhansl-Schmuckler key profiles
@@ -25,7 +29,8 @@ class KeyDetector:
 
         chromagram = librosa.feature.chroma_cqt(y=audio, sr=sr, n_chroma=12)
         chroma_avg = np.mean(chromagram, axis=1)
-        root, mode, _ = self._best_key(chroma_avg)
+        root, mode, scores = self._best_key(chroma_avg)
+        self._log_top_candidates("chroma", scores)
         return f"{NOTE_NAMES[root]} {mode}"
 
     def detect_from_notes(
@@ -44,6 +49,7 @@ class KeyDetector:
         if histogram is None:
             return "C major"
         root, mode, scores = self._best_key(histogram)
+        self._log_top_candidates("notes", scores)
         root, mode = self._final_note_tiebreak(root, mode, scores, final_pitch_class)
         return f"{NOTE_NAMES[root]} {mode}"
 
@@ -72,6 +78,9 @@ class KeyDetector:
         _, _, note_scores = self._best_key(histogram)
 
         scores = {k: (note_scores[k] + chroma_scores[k]) / 2 for k in note_scores}
+        self._log_top_candidates("notes", note_scores)
+        self._log_top_candidates("chroma", chroma_scores)
+        self._log_top_candidates("combined", scores)
         root, mode = max(scores, key=lambda k: scores[k])
         root, mode = self._final_note_tiebreak(root, mode, scores, final_pitch_class)
         return f"{NOTE_NAMES[root]} {mode}"
@@ -127,6 +136,14 @@ class KeyDetector:
         if mode == "major":
             return (root + 9) % 12, "minor"
         return (root + 3) % 12, "major"
+
+    @staticmethod
+    def _log_top_candidates(label: str, scores: dict[tuple[int, str], float], n: int = 3) -> None:
+        """B2: surface the near-misses — key confusions (e.g. G vs D major)
+        are usually a close call between the top 2-3 candidates."""
+        ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:n]
+        formatted = ", ".join(f"{NOTE_NAMES[r]} {m}={s:.3f}" for (r, m), s in ranked)
+        logger.info(f"Key candidates ({label}): {formatted}")
 
     @staticmethod
     def _best_key(pitch_class_vector) -> tuple[int, str, dict[tuple[int, str], float]]:
