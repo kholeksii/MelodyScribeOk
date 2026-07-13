@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { svg2pdf } from 'svg2pdf.js';
-import frauncesUrl from '../assets/fonts/Fraunces-Title.ttf?url';
+import ptSerifBoldUrl from '../assets/fonts/PTSerif-Bold.ttf?url';
+import ptSerifRegularUrl from '../assets/fonts/PTSerif-Regular.ttf?url';
 import { ProjectMetadata } from '../types';
 import { TFunc, instrumentLabel } from '../i18n';
 
@@ -14,25 +15,41 @@ const TITLE_BLOCK_H = 28;
 // Screen-only colors (confidence heatmap, selection, hover) → print black
 const SCREEN_COLORS = new Set(['#16a34a', '#d97706', '#dc2626', '#2563eb', '#6b7280']);
 
-let frauncesBase64: string | null = null;
+// PT Serif ships full Cyrillic glyphs. The previous fonts (Fraunces for the
+// title, jsPDF's built-in helvetica for the metadata) are Latin-only: the
+// default Ukrainian title «Транскрипція — Фортепіано» came out as a lone
+// dash and the metadata line as mojibake. In the app UI the browser silently
+// falls back to a system font — a PDF has no such fallback.
+const fontCache = new Map<string, string>();
 
-/** Embed Fraunces for the title; falls back to Times if the font can't load. */
-async function loadTitleFont(doc: jsPDF): Promise<string> {
+async function fetchFontBase64(url: string): Promise<string> {
+  const cached = fontCache.get(url);
+  if (cached) return cached;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`font fetch: ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  const b64 = btoa(binary);
+  fontCache.set(url, b64);
+  return b64;
+}
+
+/** Embed PT Serif (regular + bold); falls back to Times if it can't load. */
+async function loadFonts(doc: jsPDF): Promise<string> {
   try {
-    if (!frauncesBase64) {
-      const res = await fetch(frauncesUrl);
-      if (!res.ok) throw new Error(`font fetch: ${res.status}`);
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      let binary = '';
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-      }
-      frauncesBase64 = btoa(binary);
-    }
-    doc.addFileToVFS('Fraunces.ttf', frauncesBase64);
-    doc.addFont('Fraunces.ttf', 'Fraunces', 'normal');
-    return 'Fraunces';
+    const [regular, bold] = await Promise.all([
+      fetchFontBase64(ptSerifRegularUrl),
+      fetchFontBase64(ptSerifBoldUrl),
+    ]);
+    doc.addFileToVFS('PTSerif-Regular.ttf', regular);
+    doc.addFont('PTSerif-Regular.ttf', 'PTSerif', 'normal');
+    doc.addFileToVFS('PTSerif-Bold.ttf', bold);
+    doc.addFont('PTSerif-Bold.ttf', 'PTSerif', 'bold');
+    return 'PTSerif';
   } catch {
     return 'times';
   }
@@ -93,15 +110,15 @@ export async function exportScorePdf(
   locale: string
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const titleFont = await loadTitleFont(doc);
+  const font = await loadFonts(doc);
 
   // ── Title block ──
-  doc.setFont(titleFont, 'normal');
+  doc.setFont(font, 'bold');
   doc.setFontSize(22);
   doc.setTextColor(43, 42, 38); // ink
   doc.text(metadata.title, PAGE_W / 2, MARGIN + 8, { align: 'center' });
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(font, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(107, 103, 94); // ink-soft
   const metaLine = `${instrumentLabel(metadata.instrument, t)}  ·  ${metadata.tempo} BPM  ·  ${metadata.key}  ·  ${metadata.timeSignature}`;
@@ -148,7 +165,7 @@ export async function exportScorePdf(
 
   // ── Page numbers (only when multi-page) ──
   if (slices.length > 1) {
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(font, 'normal');
     doc.setFontSize(9);
     doc.setTextColor(120);
     for (let page = 1; page <= slices.length; page++) {
