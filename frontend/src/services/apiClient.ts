@@ -109,6 +109,23 @@ function toBackendNote(note: NoteData): BackendNote {
   };
 }
 
+/** Project shape as the Python backend's Pydantic models expect it
+ * (snake_case notes + metadata) — see ProjectMetadata/NoteData in
+ * backend/app/models/. */
+function toBackendProject(project: Project) {
+  return {
+    version: project.version,
+    metadata: {
+      title: project.metadata.title,
+      instrument: project.metadata.instrument,
+      tempo: project.metadata.tempo,
+      time_signature: project.metadata.timeSignature,
+      key: project.metadata.key,
+    },
+    notes: project.notes.map(toBackendNote),
+  };
+}
+
 interface BackendTranscription {
   notes: BackendNote[];
   tempo: number;
@@ -174,7 +191,7 @@ export const apiClient = {
   },
 
   exportMusicXml: async (project: Project): Promise<Blob> => {
-    const response = await fetch(`${BASE_URL}/export/musicxml`, postJson(project));
+    const response = await fetch(`${BASE_URL}/export/musicxml`, postJson(toBackendProject(project)));
     if (!response.ok) throw new ApiError(`http_${response.status}`, `Export failed: ${response.statusText}`);
     return await response.blob();
   },
