@@ -1,10 +1,14 @@
+import logging
 import uuid
 from pathlib import Path
 
 from fastapi import UploadFile
+from pydub import AudioSegment
 
-# from pydub import AudioSegment  # Temporarily disabled due to Python 3.13 compatibility
 from ..config import settings
+from ..errors import FfmpegMissingError
+
+logger = logging.getLogger(__name__)
 
 
 class AudioService:
@@ -23,12 +27,33 @@ class AudioService:
 
         # Generate unique file ID
         file_id = str(uuid.uuid4())
-        file_path = self.upload_dir / f"{file_id}{file_extension}"
+        raw_path = self.upload_dir / f"{file_id}{file_extension}"
 
         # Save uploaded file
         contents = await file.read()
-        with open(file_path, "wb") as f:
+        with open(raw_path, "wb") as f:
             f.write(contents)
+        logger.info(f"Uploaded {file.filename} -> {raw_path.name} ({len(contents)} bytes)")
+
+        # Microphone recordings arrive as webm (browser MediaRecorder).
+        # librosa/soundfile can't decode webm directly and silently falls
+        # back to a deprecated, flaky audioread path — convert once here so
+        # the rest of the pipeline always sees a wav (B2a).
+        final_extension = file_extension
+        if file_extension == ".webm":
+            wav_path = self.upload_dir / f"{file_id}.wav"
+            try:
+                AudioSegment.from_file(raw_path, format="webm").export(wav_path, format="wav")
+            except Exception as exc:
+                logger.error(
+                    f"webm->wav conversion failed for {raw_path.name}: {exc}", exc_info=True
+                )
+                raise FfmpegMissingError(
+                    "Could not decode the recording. Is ffmpeg installed? (brew install ffmpeg)"
+                ) from exc
+            raw_path.unlink(missing_ok=True)
+            final_extension = ".wav"
+            logger.info(f"Converted {file_id}.webm -> {file_id}.wav")
 
         # For now, return basic info without loading audio
         # TODO: Add audio loading with librosa when available
@@ -36,5 +61,5 @@ class AudioService:
             "file_id": file_id,
             "duration_sec": 0.0,  # Placeholder
             "sample_rate": 44100,  # Default
-            "format": file_extension[1:]  # Remove the dot
+            "format": final_extension[1:]  # Remove the dot
         }
