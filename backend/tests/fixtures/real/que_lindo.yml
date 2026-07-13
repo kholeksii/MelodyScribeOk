@@ -9,7 +9,7 @@
 #
 # U33 provenance: this ground truth was reconstructed by aligning the two
 # independent takes note-for-note (double-trigger artifacts merged) against
-# the printed part's lyrics and rhythm. Tiers below are ordered by how much
+# the printed part's rhythm. Tiers below are ordered by how much
 # evidence backs them. The full reconstructed score (with durations) is in
 # `full_score`; a MusicXML render of it lives next to this file
 # (que_lindo_reference.musicxml) — PROOFREAD by a musician against the print
@@ -27,21 +27,20 @@ pickup:
 
 # Long-note anchors: agogically strong notes both takes hold ≥ a dotted
 # quarter. Their mutual spacing is a rhythm assertion independent of the
-# detected meter: F#4 ("biar") starts 4 quarters after D4 ("cer").
+# detected meter: the second anchor (F#4) starts 4 quarters after the first (D4).
 anchors:
-  - {pitch: "D4", lyric: "cer",  hold_beats_min: 1.0}
-  - {pitch: "F#4", lyric: "biar", hold_beats_min: 1.0, quarters_after_prev_anchor: 4.0}
+  - {pitch: "D4", hold_beats_min: 1.0}
+  - {pitch: "F#4", hold_beats_min: 1.0, quarters_after_prev_anchor: 4.0}
 anchor_spacing_tolerance: 0.5   # rubato drift measured across the takes
 
 # ── Tier 2: consensus pitch sequence (asserted via LCS ≥ threshold) ───────
 # Merged sounding pitches of the whole take, agreed by BOTH recordings after
-# double-trigger removal. Lyrics: ¡Que lin-do_a-tar-de-cer ¡Que bien se ve
-# cam-biar la luz del sol en os-cu-ri-dad!
+# double-trigger removal.
 consensus_pitches:
-  [D4, B4, G4, E4, D4,          # ¡Que lin-do_a-tar-de(-cer→)
-   D4, B4, A4, G4, F#4,         # ¡Que bien-se ve cam-biar   (B4 twice merges)
-   D4, C5, B4, A4,              # la luz(-del) sol en
-   B4, C5, B4, A4,              # os-cu-ri-(dad…)
+  [D4, B4, G4, E4, D4,
+   D4, B4, A4, G4, F#4,
+   D4, C5, B4, A4,
+   B4, C5, B4, A4,
    G4, E4, D4]                  # cadence run to the held D4
 consensus_lcs_min: 0.75
 
@@ -57,31 +56,31 @@ final_note: "D"   # half-cadence on the dominant (corrected from "G": the
 # `uncertain: true` differ between takes or involve merged re-triggers.
 proofread: false
 full_score:
-  - {measure: 0, pitch: D4,  beats: 0.5,  lyric: "¡Que"}
-  - {measure: 1, pitch: B4,  beats: 0.75, lyric: "lin"}
-  - {measure: 1, pitch: B4,  beats: 0.25, lyric: "do_a"}
-  - {measure: 1, pitch: G4,  beats: 0.5,  lyric: "tar"}
-  - {measure: 1, pitch: E4,  beats: 0.5,  lyric: "de"}
-  - {measure: 2, pitch: D4,  beats: 1.5,  lyric: "cer"}
-  - {measure: 2, pitch: D4,  beats: 0.5,  lyric: "¡Que"}
-  - {measure: 3, pitch: B4,  beats: 0.5,  lyric: "bien"}
-  - {measure: 3, pitch: B4,  beats: 0.5,  lyric: "se"}
-  - {measure: 3, pitch: A4,  beats: 0.5,  lyric: "ve", uncertain: true}
-  - {measure: 3, pitch: G4,  beats: 0.5,  lyric: "cam", uncertain: true}
-  - {measure: 4, pitch: F#4, beats: 1.5,  lyric: "biar"}
-  - {measure: 4, pitch: D4,  beats: 0.5,  lyric: "la"}
-  - {measure: 5, pitch: C5,  beats: 1.0,  lyric: "luz", uncertain: true}
-  - {measure: 5, pitch: C5,  beats: 0.5,  lyric: "del", uncertain: true}
-  - {measure: 5, pitch: B4,  beats: 0.5,  lyric: "sol"}
-  - {measure: 6, pitch: A4,  beats: 0.75, lyric: "en"}
-  - {measure: 6, pitch: B4,  beats: 0.25, lyric: "os"}
-  - {measure: 6, pitch: C5,  beats: 0.5,  lyric: "cu"}
-  - {measure: 6, pitch: B4,  beats: 0.5,  lyric: "ri", uncertain: true}
-  - {measure: 7, pitch: A4,  beats: 0.75, lyric: "dad", uncertain: true}
+  - {measure: 0, pitch: D4,  beats: 0.5}
+  - {measure: 1, pitch: B4,  beats: 0.75}
+  - {measure: 1, pitch: B4,  beats: 0.25}
+  - {measure: 1, pitch: G4,  beats: 0.5}
+  - {measure: 1, pitch: E4,  beats: 0.5}
+  - {measure: 2, pitch: D4,  beats: 1.5}
+  - {measure: 2, pitch: D4,  beats: 0.5}
+  - {measure: 3, pitch: B4,  beats: 0.5}
+  - {measure: 3, pitch: B4,  beats: 0.5}
+  - {measure: 3, pitch: A4,  beats: 0.5,  uncertain: true}
+  - {measure: 3, pitch: G4,  beats: 0.5,  uncertain: true}
+  - {measure: 4, pitch: F#4, beats: 1.5}
+  - {measure: 4, pitch: D4,  beats: 0.5}
+  - {measure: 5, pitch: C5,  beats: 1.0,  uncertain: true}
+  - {measure: 5, pitch: C5,  beats: 0.5,  uncertain: true}
+  - {measure: 5, pitch: B4,  beats: 0.5}
+  - {measure: 6, pitch: A4,  beats: 0.75}
+  - {measure: 6, pitch: B4,  beats: 0.25}
+  - {measure: 6, pitch: C5,  beats: 0.5}
+  - {measure: 6, pitch: B4,  beats: 0.5,  uncertain: true}
+  - {measure: 7, pitch: A4,  beats: 0.75, uncertain: true}
   - {measure: 7, pitch: A4,  beats: 0.25, uncertain: true}
   - {measure: 7, pitch: G4,  beats: 0.5,  uncertain: true}
   - {measure: 7, pitch: E4,  beats: 0.5,  uncertain: true}
-  - {measure: 8, pitch: D4,  beats: 2.0,  lyric: "(hold)"}
+  - {measure: 8, pitch: D4,  beats: 2.0}
 
 recordings:
   - file: que_lindo_piano.m4a
