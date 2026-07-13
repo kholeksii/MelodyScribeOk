@@ -34,25 +34,28 @@ describe('BottomSheet', () => {
   });
 
   it('closes on scrim click by default', () => {
+    // Portaled to document.body, so query there instead of the render container
+    // (a `fixed` sheet nested under a `backdrop-blur` ancestor like the sticky
+    // header would otherwise be positioned relative to that ancestor).
     const onClose = vi.fn();
-    const { container } = render(
+    render(
       <BottomSheet open onClose={onClose}>
         <div>content</div>
       </BottomSheet>
     );
-    const scrim = container.querySelector('[aria-hidden="true"]');
+    const scrim = document.body.querySelector('[aria-hidden="true"]');
     expect(scrim).toBeTruthy();
     fireEvent.click(scrim!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('omits the scrim when scrim=false (non-modal sheet)', () => {
-    const { container } = render(
+    render(
       <BottomSheet open onClose={() => {}} scrim={false}>
         <div>content</div>
       </BottomSheet>
     );
-    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+    expect(document.body.querySelector('[aria-hidden="true"]')).toBeNull();
     expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('false');
   });
 });

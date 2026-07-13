@@ -205,4 +205,18 @@ export const uk = {
   scDeselect: 'Зняти виділення',
   scPlay: 'Грати / стоп',
   scHelp: 'Показати цю довідку',
+
+  // Адаптивний хедер редактора (U-E редизайн)
+  fileMenu: 'Файл',
+  fileMenuTitle: 'Дії з файлом',
+  exportMenu: 'Експорт',
+  exportMenuTitle: 'Дії експорту',
+  moreMenuTitle: 'Більше',
+  metadataSummaryTitle: 'Деталі транскрипції — торкніться, щоб змінити розмір',
+  autosaved: 'Збережено автоматично',
+  newProjectConfirm: 'Відхилити поточну транскрипцію та почати нову?',
+  importMusicXmlLabel: 'Імпорт MusicXML',
+  themeLight: 'Світла',
+  themeDark: 'Темна',
+  themeAuto: 'Авто',
 } satisfies Record<TranslationKey, string>;

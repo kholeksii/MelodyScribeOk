@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface BottomSheetProps {
   open: boolean;
@@ -54,7 +55,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   if (!open) return null;
 
-  return (
+  // Portaled to <body>: a `fixed` sheet nested inside a `backdrop-blur`/
+  // `filter` ancestor (e.g. the sticky header) would otherwise be positioned
+  // relative to that ancestor instead of the viewport (CSS containing-block
+  // rule for elements with a filter/backdrop-filter).
+  return createPortal(
     <>
       {scrim && <div className="fixed inset-0 z-40 bg-ink/40" aria-hidden="true" onClick={onClose} />}
       <div
@@ -71,6 +76,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         {title && <h2 className="px-4 pb-1 pt-2 text-sm font-semibold text-ink">{title}</h2>}
         <div className="pb-2">{children}</div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
