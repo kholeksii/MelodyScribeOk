@@ -12,23 +12,78 @@ export interface RenderListeners {
 }
 
 // Multi-system layout: measures wrap into lines so long scores stack
-// vertically (readable on screen and paginatable in the PDF export)
-const MEASURES_PER_LINE = 4;
+// vertically (readable on screen and paginatable in the PDF export).
+// Tier breakpoints and internal render widths mirror SPEC.md §3/§2.
 const LINE_HEIGHT = 150;
 const STAVE_X = 10;
 const STAVE_Y0 = 40;
-const STAVE_W = 1100;
-const FORMAT_W = 950;
+
+/** Measures/line and internal SVG render width for a given container width. */
+function tierFor(containerWidth: number): { measuresPerLine: number; renderW: number } {
+  if (containerWidth < 640) return { measuresPerLine: 2, renderW: 640 };
+  if (containerWidth < 1024) return { measuresPerLine: 3, renderW: 900 };
+  return { measuresPerLine: 4, renderW: 1200 };
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Full-slot tap targets so touch never needs to hit the tiny glyph itself
+ * (SPEC.md §3): one transparent rect per note, spanning the horizontal
+ * midpoint-to-midpoint gap between neighbours and the full stave height,
+ * tagged with `data-note-id` for hit-testing. Relies on `.vf-notehead`
+ * elements being drawn in the same order as `noteTickables` (also assumed
+ * by the highlight/hover logic in useNotationRenderer). */
+function injectHitZones(
+  svg: SVGSVGElement,
+  noteTickables: { data: { id: string }; line: number }[],
+  staveX: number,
+  staveW: number,
+  staveY0: number,
+): void {
+  const noteheads = svg.querySelectorAll<SVGGraphicsElement>('.vf-notehead');
+  if (noteheads.length === 0) return;
+
+  const centers: { x: number; line: number }[] = [];
+  noteheads.forEach((el, i) => {
+    if (i >= noteTickables.length) return;
+    const bbox = el.getBBox();
+    centers.push({ x: bbox.x + bbox.width / 2, line: noteTickables[i].line });
+  });
+
+  const zoneTop = (line: number) => staveY0 + line * LINE_HEIGHT - 25;
+  const zoneHeight = 110;
+
+  centers.forEach((center, i) => {
+    const { data } = noteTickables[i];
+    const prev = i > 0 && centers[i - 1].line === center.line ? centers[i - 1] : null;
+    const next = i < centers.length - 1 && centers[i + 1].line === center.line ? centers[i + 1] : null;
+    const left = prev ? (prev.x + center.x) / 2 : staveX;
+    const right = next ? (center.x + next.x) / 2 : staveX + staveW;
+
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', String(left));
+    rect.setAttribute('y', String(zoneTop(center.line)));
+    rect.setAttribute('width', String(Math.max(0, right - left)));
+    rect.setAttribute('height', String(zoneHeight));
+    rect.setAttribute('fill', 'transparent');
+    rect.setAttribute('data-note-id', data.id);
+    rect.classList.add('vf-hit-zone');
+    (rect.style as CSSStyleDeclaration).cursor = 'pointer';
+    svg.appendChild(rect);
+  });
+}
 
 /** Draw the score into `container` (imperative VexFlow API, dynamic import
  * to avoid SSR issues). Returns the created SVG element, with the given
- * listeners attached, or null when rendering failed. */
+ * listeners attached, or null when rendering failed. `containerWidth` picks
+ * the responsive tier (measures/line, glyph scale) — see SPEC.md §3. */
 export async function renderScore(
   container: HTMLDivElement,
   notes: NoteData[],
   timeSignature: string,
   keySignature: string,
   listeners: RenderListeners,
+  containerWidth: number,
 ): Promise<SVGSVGElement | null> {
   try {
     const Vex = await import('vexflow');
@@ -60,6 +115,10 @@ export async function renderScore(
     const Rest = flowExtras.Rest ?? null;
     const BarNote = flowExtras.BarNote ?? null;
 
+    const { measuresPerLine, renderW } = tierFor(containerWidth);
+    const STAVE_W = renderW - 100;
+    const FORMAT_W = STAVE_W - 150;
+
     // Create a wrapper div for SVG with click handling
     const svgWrapper = document.createElement('div');
     svgWrapper.style.width = '100%';
@@ -68,13 +127,14 @@ export async function renderScore(
 
     const measures = groupNotesByMeasure(notes);
     const lines: NoteData[][][] = [];
-    for (let i = 0; i < measures.length; i += MEASURES_PER_LINE) {
-      lines.push(measures.slice(i, i + MEASURES_PER_LINE));
+    for (let i = 0; i < measures.length; i += measuresPerLine) {
+      lines.push(measures.slice(i, i + measuresPerLine));
     }
     if (lines.length === 0) lines.push([]);
 
+    const renderH = STAVE_Y0 + lines.length * LINE_HEIGHT + 30;
     const renderer = new Renderer(svgWrapper, Renderer.Backends.SVG);
-    renderer.resize(1200, STAVE_Y0 + lines.length * LINE_HEIGHT + 30);
+    renderer.resize(renderW, renderH);
     const context = renderer.getContext();
 
     const svg = svgWrapper.querySelector('svg');
@@ -82,6 +142,14 @@ export async function renderScore(
       svg.addEventListener('click', listeners.onClick);
       svg.addEventListener('mousemove', listeners.onMouseMove);
       svg.style.cursor = 'default';
+      // Fluid scaling: the SVG fills its container at any tier instead of
+      // rendering at a fixed pixel size (SPEC.md §3).
+      svg.setAttribute('viewBox', `0 0 ${renderW} ${renderH}`);
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.style.width = '100%';
+      svg.style.height = 'auto';
+      svg.style.display = 'block';
     }
 
     const vexKeySignature = convertKeySignatureToVexFlow(keySignature);
@@ -159,7 +227,7 @@ export async function renderScore(
       voice.setStrict(false);
       voice.addTickables(lineTickables);
       // Short last lines take proportionally less width instead of stretching
-      const width = Math.max(200, (FORMAT_W * lineMeasures.length) / MEASURES_PER_LINE);
+      const width = Math.max(200, (FORMAT_W * lineMeasures.length) / measuresPerLine);
       new Formatter().joinVoices([voice]).format([voice], width);
       voice.draw(context, stave);
     });
@@ -216,6 +284,8 @@ export async function renderScore(
         }
       }
     }
+
+    if (svg) injectHitZones(svg, noteTickables, STAVE_X, STAVE_W, STAVE_Y0);
 
     console.log('✅ Notation rendered successfully');
     return svg;
