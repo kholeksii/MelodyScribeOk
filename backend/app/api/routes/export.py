@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -24,11 +25,23 @@ async def export_musicxml(project: Project):
     service = PDFService()
     xml_bytes = service.export_musicxml_bytes(project)
 
+    # HTTP headers are latin-1 only: a Cyrillic title (the app's default is
+    # «Транскрипція — …») in a bare filename= crashed the response with a
+    # UnicodeEncodeError → 400. Send an ASCII fallback plus the RFC 5987
+    # filename* form that carries the real UTF-8 name.
     filename = (project.metadata.title or "score").replace(" ", "_")
+    ascii_name = filename.encode("ascii", "ignore").decode()
+    if not any(c.isalnum() for c in ascii_name):
+        ascii_name = "score"
+    utf8_name = quote(f"{filename}.musicxml")
     return Response(
         content=xml_bytes,
         media_type="application/vnd.recordare.musicxml+xml",
-        headers={"Content-Disposition": f"attachment; filename={filename}.musicxml"},
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename={ascii_name}.musicxml; filename*=UTF-8''{utf8_name}"
+            )
+        },
     )
 
 

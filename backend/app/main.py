@@ -77,6 +77,9 @@ async def ffmpeg_exception_handler(request: Request, exc: FfmpegMissingError) ->
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    # Log with traceback — a bare 400 in the access log is undiagnosable
+    # (the Cyrillic-filename export bug hid here with zero log lines)
+    logger.warning(f"Bad request on {request.url.path}: {exc}", exc_info=True)
     return _error_response(400, "bad_request", str(exc))
 
 
