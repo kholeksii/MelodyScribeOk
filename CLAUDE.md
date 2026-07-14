@@ -4,36 +4,37 @@
 Десктопний додаток для дружини-музикантки. Транскрипція монофонічних мелодій (фортепіано → скрипка → гітара) з аудіо у нотний запис. Фронтенд: Electron + React + VexFlow. Бекенд: Python FastAPI + librosa.
 
 ## Активний план
-`/Users/okh/.claude/plans/users-okh-documents-dev-melodyscribeok-lovely-moon.md`
+**`instructions/PLAN.md`** — єдиний живий план проєкту. Виконані задачі з
+нього видаляються (історія — в git/PR). Нові задачі та плани пишемо тільки туди.
 
-## Поточний стан (оновлено 2026-05-09)
+Правила виконання задач: кожна — окрема гілка + окремий PR (заголовок/опис
+**англійською**), CI зелений, звіти користувачу українською. Задача стартує
+лише за явною командою (напр. «U40»).
 
-### ✅ Фаза 0 — завершена
-- Замінено Ollama/LLM → `TheoryChecker` (music21, детерміновані правила)
-- Замінено LilyPond → MusicXML export (music21) + PDF на фронтенді (VexFlow→jsPDF)
-- Прибрано CREPE/TensorFlow — код вже використовував librosa.pyin
-- Оновлено документацію `instructions/01-ARCHITECTURE.md`
-- PR #2 створено та змержено
+## Поточний стан (оновлено 2026-07-14)
 
-### ✅ Фаза 1 — завершена
-- [x] П4 — Контекстна квантизація ритму (`backend/app/core/quantizer.py`)
-- [x] П5 — Синхронізоване програвання аудіо + курсор (`frontend/src/hooks/usePlayback.ts`, `store/projectStore.ts`, `NotationDisplay.tsx`)
-- [x] П6 — Undo/Redo в редакторі (`frontend/src/store/projectStore.ts`, `App.tsx`)
-- [x] П7 — Confidence heatmap на нотах (`frontend/src/components/NotationEditor/NotationDisplay.tsx`)
+Виконано (віхи; деталі в git/PR):
+- Фаза 0 (заміна LLM/LilyPond/CREPE на детерміновані інструменти) — PR #2
+- Фази 1–3 (квантизація, playback, undo/redo, MusicXML, waveform, PyInstaller)
+- Фази U-A…U-C: тести+CI, точність (темп/тональність/онсети), дизайн-система,
+  українська локалізація, клавіатурне редагування, автосейв — PR #1–#21
+- Фаза U-E: метрична точність — розмір/рівень темпу/затакт (U31–U35) — PR #23–#27
+- Адаптивний редизайн iPhone/iPad/десктоп, 8 кроків за `mockups/SPEC.md` — PR #30–#37
+- LAN-доступ (айпад по Wi-Fi) — PR #38; баги B2/B5/B5b — PR #40–#42
 
-### ✅ Фаза 2 — завершена
-- [x] П8 — MusicXML import/export (music21 parse/build, ExportButton, apiClient)
-- [x] П9 — Waveform display (WaveformDisplay.tsx, GET /api/audio/{file_id})
-- [x] П10 — Динаміка/артикуляції (RMS→velocity, staccato/legato detection)
+У черзі: див. `instructions/PLAN.md` (UX-покращення U40–U43, баги B3/B4,
+backlog U-D десктоп-зрілість).
 
-### ✅ Фаза 3 — завершена
-- [x] П11 — PyInstaller: `backend/melodyscribe.spec`, `backend/run_server.py`, Electron main.ts запускає бінарник, `build.sh` для повного pipeline
-- [x] П12 — Tauri оцінка: `instructions/03-TAURI-EVALUATION.md` — висновок: Electron для v1, Tauri для v2 при широкому поширенні
-
-## Запуск бекенду
+## Запуск
 ```bash
+# Бекенд (термінал 1)
 cd /Users/okh/Documents/Dev/MelodyScribeOk/backend
 source .venv/bin/activate
 python -m uvicorn app.main:app --reload --port 8000
+
+# Фронтенд (термінал 2)
+cd /Users/okh/Documents/Dev/MelodyScribeOk/frontend
+npm run dev
 ```
 API docs: http://localhost:8000/docs
+Доступ з айпада: обидва сервери з `--host 0.0.0.0`, відкрити `http://<IP-мака>:5173`
