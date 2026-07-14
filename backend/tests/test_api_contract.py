@@ -53,3 +53,38 @@ def test_verify_empty_notes_is_enveloped_400() -> None:
     body = response.json()
     assert body["success"] is False
     assert body["error"]["code"] == "bad_request"
+
+
+def test_musicxml_export_with_cyrillic_title() -> None:
+    """B5b: the app's default title is Cyrillic («Транскрипція — …») and HTTP
+    headers are latin-1 — a bare filename= crashed the response with a 400."""
+    response = client.post(
+        "/api/export/musicxml",
+        json={
+            "version": "1.0",
+            "metadata": {
+                "title": "Транскрипція — Фортепіано",
+                "instrument": "piano",
+                "tempo": 66,
+                "time_signature": "3/4",
+                "key": "G major",
+            },
+            "notes": [
+                {
+                    "id": "n1",
+                    "pitch": "D4",
+                    "duration": "quarter",
+                    "start_beat": 0.0,
+                    "measure": 1,
+                    "velocity": 80,
+                    "confidence": 1.0,
+                    "theory_corrected": False,
+                }
+            ],
+        },
+    )
+    assert response.status_code == 200
+    disposition = response.headers["content-disposition"]
+    assert "filename=score.musicxml" in disposition  # latin-1-safe fallback
+    assert "filename*=UTF-8''" in disposition  # real name, RFC 5987
+    assert b"score-partwise" in response.content
