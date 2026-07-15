@@ -26,6 +26,8 @@ export const en = {
   record: 'Record',
   recordingStop: '{s}s — click to stop',
   processing: 'Processing...',
+  microphoneRecording: 'Microphone recording',
+  clearSelectedFile: 'Remove selected file',
 
   // Instruments
   instrument: 'Instrument',

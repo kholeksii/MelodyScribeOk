@@ -40,6 +40,7 @@ class AudioService:
         # back to a deprecated, flaky audioread path — convert once here so
         # the rest of the pipeline always sees a wav (B2a).
         final_extension = file_extension
+        final_path = raw_path
         if file_extension == ".webm":
             wav_path = self.upload_dir / f"{file_id}.wav"
             try:
@@ -53,13 +54,24 @@ class AudioService:
                 ) from exc
             raw_path.unlink(missing_ok=True)
             final_extension = ".wav"
+            final_path = wav_path
             logger.info(f"Converted {file_id}.webm -> {file_id}.wav")
 
-        # For now, return basic info without loading audio
-        # TODO: Add audio loading with librosa when available
+        # Real duration/sample rate for the upload-screen file chip (U41) —
+        # pydub is already a dependency (B2a webm conversion) so reuse it
+        # instead of pulling librosa in just for a duration probe.
+        try:
+            probe = AudioSegment.from_file(final_path)
+            duration_sec = round(len(probe) / 1000.0, 2)
+            sample_rate = probe.frame_rate
+        except Exception as exc:
+            logger.warning(f"Could not probe duration for {final_path.name}: {exc}")
+            duration_sec = 0.0
+            sample_rate = 44100
+
         return {
             "file_id": file_id,
-            "duration_sec": 0.0,  # Placeholder
-            "sample_rate": 44100,  # Default
+            "duration_sec": duration_sec,
+            "sample_rate": sample_rate,
             "format": final_extension[1:]  # Remove the dot
         }

@@ -22,6 +22,14 @@ import { useT, localizeError, instrumentLabel } from './i18n';
 import { AudioInfo, Instrument, TranscriptionData } from './types';
 import demoAudioUrl from './assets/demo-do-mi-re-do.wav?url';
 
+/** "1:05" style duration for the selected-file chip (U41). */
+function formatChipDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 function App() {
   const [instrument, setInstrument] = useState<Instrument>('violin');
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -40,10 +48,13 @@ function App() {
   const {
     notes,
     audioFileId,
+    audioFileName,
+    audioFileDurationSec,
     error,
     setNotes,
     setMetadata,
     setAudioFileId,
+    clearAudioFile,
     setLoading,
     setError,
   } = useProjectStore();
@@ -56,6 +67,11 @@ function App() {
 
   const handleUploadComplete = (audioInfo: AudioInfo) => {
     setAudioFileId(audioInfo.fileId);
+    setError(null);
+  };
+
+  const handleClearFile = () => {
+    clearAudioFile();
     setError(null);
   };
 
@@ -186,6 +202,26 @@ function App() {
     </div>
   );
 
+  const selectedFileChip = audioFileId && audioFileName && (
+    <div className="flex w-full max-w-md items-center justify-center gap-2 rounded-md border border-ink-soft/20 bg-paper-dark px-3 py-2 text-sm text-ink">
+      <span className="truncate">
+        🎵 {audioFileName}
+        {audioFileDurationSec != null && audioFileDurationSec > 0 && (
+          <span className="text-ink-soft"> · {formatChipDuration(audioFileDurationSec)}</span>
+        )}
+      </span>
+      <button
+        type="button"
+        onClick={handleClearFile}
+        aria-label={t('clearSelectedFile')}
+        title={t('clearSelectedFile')}
+        className="tap-target shrink-0 rounded-full px-1.5 text-ink-soft hover:text-ink"
+      >
+        ✕
+      </button>
+    </div>
+  );
+
   const transcribeButton = audioFileId && (
     <button
       onClick={handleTranscribe}
@@ -204,6 +240,7 @@ function App() {
         <RecoveryBanner />
         <RecordButton onUploadComplete={handleUploadComplete} size="large" />
         <FileUpload onUploadComplete={handleUploadComplete} compact />
+        {selectedFileChip}
         {demoButton}
         {optionsAndInstrument}
         {errorBlock}
@@ -230,6 +267,7 @@ function App() {
         </div>
         {demoButton}
         {optionsAndInstrument}
+        {selectedFileChip}
         {transcribeButton}
         {errorBlock}
       </div>
@@ -249,6 +287,7 @@ function App() {
         <RecordButton onUploadComplete={handleUploadComplete} />
         {demoButton}
         {optionsAndInstrument}
+        {selectedFileChip}
         {transcribeButton}
         {errorBlock}
       </div>
