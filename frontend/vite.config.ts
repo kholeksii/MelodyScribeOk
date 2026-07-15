@@ -14,12 +14,26 @@ try {
   // not a git checkout (e.g. built from a tarball) — keep the fallback
 }
 
+// The repo merges every PR with a "Merge pull request #N" commit, so the
+// last one reachable from HEAD is the latest merged PR — used as the
+// version's trailing digit so "which PR is this build on" is visible
+// without checking git (U40).
+let latestPr = 0
+try {
+  const subject = execSync('git log --grep="^Merge pull request #" -1 --format=%s').toString().trim()
+  const match = subject.match(/^Merge pull request #(\d+)/)
+  if (match) latestPr = Number(match[1])
+} catch {
+  // not a git checkout, or no merge commits yet — keep 0
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_PR__: JSON.stringify(latestPr),
     __APP_GIT_SHA__: JSON.stringify(gitSha),
     __APP_BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
   },
