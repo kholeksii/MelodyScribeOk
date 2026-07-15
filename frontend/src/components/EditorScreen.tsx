@@ -77,6 +77,7 @@ export const EditorScreen: React.FC = () => {
           <div className="mx-auto max-w-7xl sm:px-6 sm:py-3 lg:px-8">
             <PlaybackControls
               bpm={metadata?.tempo || 120}
+              instrument={metadata?.instrument}
               undo={undo}
               redo={redo}
               canUndo={canUndo}
