@@ -13,6 +13,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { VersionBadge } from './VersionBadge';
 import { fullVersion } from '../version';
+import { useToast } from './Toast';
 import { useT, instrumentLabel } from '../i18n';
 
 interface EditorHeaderProps {
@@ -26,6 +27,7 @@ const rowClass =
  * chip + ⋯ menu on tablet, two thin rows + a full ⋯ sheet on phone. */
 export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) => {
   const t = useT();
+  const { showToast } = useToast();
   const isTabletUp = useMediaQuery('(min-width: 640px)');
   const isDesktopUp = useMediaQuery('(min-width: 1024px)');
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -50,8 +52,20 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
     clearAutosave();
   };
 
-  const handlePhoneBack = () => {
+  // Every path to "new" (desktop button, File ▾ menu, phone back arrow,
+  // phone ⋯ sheet) confirms the same way — previously only the phone back
+  // arrow did, risking a one-click loss of unsaved work elsewhere (U42).
+  const confirmNewTranscription = () => {
     if (window.confirm(t('newProjectConfirm'))) handleNewTranscription();
+  };
+
+  // A natural moment to start the next song, offered right after a
+  // successful export (U42, minor addition).
+  const offerNewAfterExport = () => {
+    showToast(t('exportedStartNewPrompt'), 'success', 8000, {
+      label: t('newProject'),
+      onClick: confirmNewTranscription,
+    });
   };
 
   const fileMenuItems: MenuItem[] = [
@@ -62,7 +76,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
       label: t('importMusicXmlLabel'),
       onSelect: () => fileInputRef.current?.click(),
     },
-    { key: 'new', icon: '✨', label: t('newProject'), onSelect: handleNewTranscription },
+    { key: 'new', icon: '✨', label: t('newProject'), onSelect: confirmNewTranscription },
   ];
 
   const exportMenuItems: MenuItem[] = [
@@ -71,14 +85,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
       icon: '📄',
       label: t('exportPdf'),
       kbd: '⌘E',
-      onSelect: handleExportPDF,
+      onSelect: () => handleExportPDF(offerNewAfterExport),
       disabled: !canExport,
     },
     {
       key: 'musicxml',
       icon: '🎼',
       label: 'MusicXML',
-      onSelect: handleExportMusicXML,
+      onSelect: () => handleExportMusicXML(offerNewAfterExport),
       disabled: !canExport,
     },
   ];
@@ -140,6 +154,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
             {undoRedo}
             <button onClick={handleSave} disabled={!canSave} title={t('saveTitle')} className="btn-ghost">
               💾 {t('save')}
+            </button>
+            <button onClick={confirmNewTranscription} title={t('newProjectTitle')} className="btn-ghost">
+              ✚ {t('newProject')}
             </button>
             <div className="relative">
               <button
@@ -214,6 +231,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
               aria-label={t('save')}
             >
               💾
+            </button>
+            <button onClick={confirmNewTranscription} title={t('newProjectTitle')} className="btn-ghost">
+              ✚ {t('newProject')}
             </button>
             <div className="relative">
               <button
@@ -295,7 +315,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
   return (
     <header className="sticky top-0 z-30 border-b border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
       <div className="flex items-center gap-2 px-3 py-2">
-        <button onClick={handlePhoneBack} title={t('newProjectTitle')} className="btn-ghost" aria-label={t('newProject')}>
+        <button onClick={confirmNewTranscription} title={t('newProjectTitle')} className="btn-ghost" aria-label={t('newProject')}>
           ←
         </button>
         <input
@@ -362,7 +382,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
         <button
           onClick={() => {
             setMoreOpen(false);
-            handleExportPDF();
+            handleExportPDF(offerNewAfterExport);
           }}
           disabled={!canExport}
           className={rowClass}
@@ -376,7 +396,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
         <button
           onClick={() => {
             setMoreOpen(false);
-            handleExportMusicXML();
+            handleExportMusicXML(offerNewAfterExport);
           }}
           disabled={!canExport}
           className={rowClass}
@@ -387,7 +407,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
         <button
           onClick={() => {
             setMoreOpen(false);
-            handleNewTranscription();
+            confirmNewTranscription();
           }}
           className={rowClass}
         >

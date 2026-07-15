@@ -42,7 +42,7 @@ export function useExportActions() {
     })),
   });
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (onSuccess?: () => void) => {
     if (!canExport) return;
     setIsExporting(true);
     setError(null);
@@ -54,6 +54,7 @@ export function useExportActions() {
       }
       const doc = await exportScorePdf(svgEl, metadata!, t, language);
       doc.save(`${metadata!.title.replace(/\s+/g, '_')}.pdf`);
+      onSuccess?.();
     } catch (err) {
       setError(localizeError(err, t) || t('pdfExportFailed'));
     } finally {
@@ -61,7 +62,7 @@ export function useExportActions() {
     }
   };
 
-  const handleExportMusicXML = async () => {
+  const handleExportMusicXML = async (onSuccess?: () => void) => {
     if (!canExport) return;
     setIsExporting(true);
     setError(null);
@@ -75,6 +76,7 @@ export function useExportActions() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      onSuccess?.();
     } catch (err) {
       setError(localizeError(err, t) || t('exportFailed'));
     } finally {

@@ -3,14 +3,20 @@ import { useT } from '../i18n';
 
 type ToastType = 'info' | 'success' | 'error';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastItem {
   id: number;
   message: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type?: ToastType, durationMs?: number) => void;
+  showToast: (message: string, type?: ToastType, durationMs?: number, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
@@ -29,9 +35,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', durationMs?: number) => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', durationMs?: number, action?: ToastAction) => {
     const id = ++nextId;
-    setToasts((prev) => [...prev.slice(-(MAX_STACKED - 1)), { id, message, type }]);
+    setToasts((prev) => [...prev.slice(-(MAX_STACKED - 1)), { id, message, type, action }]);
 
     if (type !== 'error') {
       setTimeout(() => dismiss(id), durationMs ?? 5000);
@@ -68,6 +74,17 @@ const ToastRow: React.FC<{ toast: ToastItem; colorClass: string; onDismiss: () =
       className={`flex max-w-sm animate-fade-in items-start gap-3 rounded px-4 py-3 text-sm font-medium shadow-lg ${colorClass}`}
     >
       <span className="flex-1">{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={() => {
+            toast.action!.onClick();
+            onDismiss();
+          }}
+          className="shrink-0 whitespace-nowrap rounded border border-current/40 px-2 py-0.5 text-xs font-semibold hover:bg-black/10"
+        >
+          {toast.action.label}
+        </button>
+      )}
       {toast.type === 'error' && (
         <button onClick={onDismiss} aria-label={t('close')} className="shrink-0 opacity-80 hover:opacity-100">
           ✕
