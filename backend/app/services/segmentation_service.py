@@ -26,6 +26,11 @@ except ImportError:
 
 MIN_NOTE_CONFIDENCE = 0.3  # phantom-note filter (audit found notes at 0.10)
 REST_MIN_BEATS = 0.5  # a silent tail shorter than this stays part of the note
+# U51: onsets alone miss slurred (legato) pitch changes — a bowed note change
+# under one stroke has no attack. A sustained semitone change inside a
+# segment's own pyin trajectory is treated as a second note.
+LEGATO_MEDIAN_WINDOW = 5  # ~30ms at the pitch detector's 256-sample hop
+LEGATO_MIN_RUN_SEC = 0.06  # a pitch run shorter than this is noise/vibrato, not a new note
 
 
 def _sounding_duration_sec(segment, sr: int, floor_amp: float) -> float:
@@ -47,6 +52,67 @@ def _rms_to_velocity(rms: float, rms_max: float) -> int:
         return 80
     ratio = min(rms / rms_max, 1.0)
     return int(20 + ratio * 100)
+
+
+def _split_segment_by_pitch(
+    segment_pitches: list[dict],
+    min_run_sec: float = LEGATO_MIN_RUN_SEC,
+    median_window: int = LEGATO_MEDIAN_WINDOW,
+) -> list[list[dict]]:
+    """Split an onset segment's pitch frames wherever the trajectory holds a
+    new semitone for at least `min_run_sec` (U51 — legato re-segmentation).
+
+    Onsets alone cut notes only at attacks, so a slurred pitch change (one
+    bow stroke, two notes) has no onset to split on and the whole slur
+    collapses into a single, often-wrong note. This scans the segment's own
+    pyin frames, smooths them with a small median filter to ignore vibrato
+    and jitter, and looks for a sustained semitone change to split on.
+    Returns `[segment_pitches]` unchanged when no such change is found.
+    """
+    import librosa
+    import numpy as np
+
+    if len(segment_pitches) < median_window:
+        return [segment_pitches]
+
+    freqs = np.array([p["frequency"] for p in segment_pitches])
+    times = np.array([p["time_ms"] / 1000.0 for p in segment_pitches])
+
+    half = median_window // 2
+    filtered = np.array([
+        np.median(freqs[max(0, i - half): i + half + 1])
+        for i in range(len(freqs))
+    ])
+    semitones = np.round(librosa.hz_to_midi(filtered)).astype(int)
+
+    # Collapse into runs of a stable semitone value
+    runs: list[list[int]] = []
+    start = 0
+    for i in range(1, len(semitones) + 1):
+        if i == len(semitones) or semitones[i] != semitones[start]:
+            runs.append([start, i, int(semitones[start])])
+            start = i
+
+    # Merge runs shorter than min_run_sec into a neighbor — a blip mid-note
+    # (vibrato overshoot, a single noisy frame) isn't a real pitch change
+    merged: list[list[int]] = []
+    for run_start, run_end, value in runs:
+        duration = times[run_end - 1] - times[run_start]
+        if duration < min_run_sec and merged:
+            merged[-1][1] = run_end
+        else:
+            merged.append([run_start, run_end, value])
+    if len(merged) > 1:
+        run_start, run_end, _ = merged[0]
+        duration = times[run_end - 1] - times[run_start]
+        if duration < min_run_sec:
+            merged[1][0] = run_start
+            merged.pop(0)
+
+    if len(merged) < 2:
+        return [segment_pitches]
+
+    return [segment_pitches[s:e] for s, e, _ in merged]
 
 
 def _detect_articulation(duration_sec: float, gap_sec: float) -> str | None:
@@ -339,55 +405,74 @@ class SegmentationService:
                 logger.debug(f"Onset {i} at {onset:.3f}s: no pitch found, skipping")
                 continue
 
-            freqs = _np.array([p['frequency'] for p in segment_pitches])
-            median_pitch = float(_np.median(freqs))
-            median_note = self.pitch_detector._frequency_to_note(median_pitch)
-
-            # Confidence = pitch stability: low std relative to median → high confidence
-            if len(freqs) > 1:
-                rel_std = float(_np.std(freqs) / median_pitch) if median_pitch > 0 else 1.0
-                confidence = float(_np.clip(1.0 - rel_std * 5, 0.1, 1.0))
-            else:
-                confidence = 0.75  # single frame — medium confidence
-
-            duration_sec = next_onset - onset
-            start_beat = onset * tempo / 60.0
-            measure = int(start_beat // beats_per_measure) + 1
-
             velocity = _rms_to_velocity(rms_values[i], rms_max)
-            articulation = _detect_articulation(duration_sec, duration_sec)
 
-            # Split off a rest when the tail of the segment is silent
-            rest = None
-            if audio is not None and floor_amp > 0:
-                segment = audio[int(onset * sr) : int(next_onset * sr)]
-                sounding_sec = _sounding_duration_sec(segment, sr, floor_amp)
-                silent_tail = duration_sec - sounding_sec
-                if sounding_sec > 0 and silent_tail >= REST_MIN_BEATS * beat_sec:
-                    duration_sec = sounding_sec
-                    rest_start = start_beat + sounding_sec * tempo / 60.0
-                    rest = {
-                        "note": "rest",
-                        "start_beat": rest_start,
-                        "measure": int(rest_start // beats_per_measure) + 1,
-                        "duration_sec": silent_tail,
-                        "confidence": 1.0,
-                        "velocity": 0,
-                        "articulation": None,
-                    }
+            # U51: a legato pitch change inside this onset segment (no
+            # attack to split on) becomes a second/third note here
+            partitions = _split_segment_by_pitch(segment_pitches)
+            if len(partitions) > 1:
+                logger.debug(
+                    f"Onset {i} at {onset:.3f}s: split into {len(partitions)} "
+                    f"notes by sustained pitch change (legato)"
+                )
 
-            logger.debug(f"Onset {i} at {onset:.3f}s → {median_note} (conf={confidence:.2f})")
-            notes.append({
-                "note": median_note,
-                "start_beat": start_beat,
-                "measure": measure,
-                "duration_sec": duration_sec,
-                "confidence": confidence,
-                "velocity": velocity,
-                "articulation": articulation,
-            })
-            if rest is not None:
-                notes.append(rest)
+            for p_idx, partition in enumerate(partitions):
+                is_last = p_idx == len(partitions) - 1
+                part_start = onset if p_idx == 0 else partition[0]["time_ms"] / 1000.0
+                part_end = next_onset if is_last else partitions[p_idx + 1][0]["time_ms"] / 1000.0
+
+                freqs = _np.array([p['frequency'] for p in partition])
+                median_pitch = float(_np.median(freqs))
+                median_note = self.pitch_detector._frequency_to_note(median_pitch)
+
+                # Confidence = pitch stability: low std relative to median → high confidence
+                if len(freqs) > 1:
+                    rel_std = float(_np.std(freqs) / median_pitch) if median_pitch > 0 else 1.0
+                    confidence = float(_np.clip(1.0 - rel_std * 5, 0.1, 1.0))
+                else:
+                    confidence = 0.75  # single frame — medium confidence
+
+                duration_sec = part_end - part_start
+                start_beat = part_start * tempo / 60.0
+                measure = int(start_beat // beats_per_measure) + 1
+
+                articulation = _detect_articulation(duration_sec, duration_sec)
+
+                # Split off a rest when the tail of the segment is silent
+                # (only meaningful for the last note — legato splits are
+                # continuous sound by construction)
+                rest = None
+                if is_last and audio is not None and floor_amp > 0:
+                    segment = audio[int(part_start * sr) : int(part_end * sr)]
+                    sounding_sec = _sounding_duration_sec(segment, sr, floor_amp)
+                    silent_tail = duration_sec - sounding_sec
+                    if sounding_sec > 0 and silent_tail >= REST_MIN_BEATS * beat_sec:
+                        duration_sec = sounding_sec
+                        rest_start = start_beat + sounding_sec * tempo / 60.0
+                        rest = {
+                            "note": "rest",
+                            "start_beat": rest_start,
+                            "measure": int(rest_start // beats_per_measure) + 1,
+                            "duration_sec": silent_tail,
+                            "confidence": 1.0,
+                            "velocity": 0,
+                            "articulation": None,
+                        }
+
+                logger.debug(
+                    f"Onset {i} at {part_start:.3f}s → {median_note} (conf={confidence:.2f})"
+                )
+                notes.append({
+                    "note": median_note,
+                    "start_beat": start_beat,
+                    "measure": measure,
+                    "duration_sec": duration_sec,
+                    "confidence": confidence,
+                    "velocity": velocity,
+                    "articulation": articulation,
+                })
+                if rest is not None:
+                    notes.append(rest)
 
         notes = self._filter_phantom_notes(notes, tempo)
         notes = fold_octave_outliers(notes)
