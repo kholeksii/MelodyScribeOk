@@ -58,6 +58,7 @@ export const uk = {
   openFailed: 'Не вдалося відкрити проєкт',
   newProject: 'Нова',
   newProjectTitle: 'Почати нову транскрипцію',
+  exportedStartNewPrompt: 'Збережено. Почати нову транскрипцію?',
 
   // Експорт / імпорт
   exportPdf: 'Експорт PDF',

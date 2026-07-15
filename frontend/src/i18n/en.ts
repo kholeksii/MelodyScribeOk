@@ -57,6 +57,7 @@ export const en = {
   openFailed: 'Failed to open project',
   newProject: 'New',
   newProjectTitle: 'Start a new transcription',
+  exportedStartNewPrompt: 'Saved. Start a new transcription?',
 
   // Export / import
   exportPdf: 'Export PDF',
