@@ -58,6 +58,8 @@ backend/uploads/
 !backend/tests/fixtures/real/*.m4a
 # ...and the bundled demo melody shipped with the app (U23)
 !frontend/src/assets/demo-do-mi-re-do.wav
+# ...and the bundled instrument samples for realistic playback (U50)
+!frontend/public/samples/**/*.mp3
 
 # Node.js (for future frontend)
 node_modules/

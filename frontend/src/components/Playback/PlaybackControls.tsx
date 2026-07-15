@@ -9,6 +9,7 @@ import { useT } from '../../i18n';
 
 interface PlaybackControlsProps {
   bpm?: number;
+  instrument?: string;
   undo?: () => void;
   redo?: () => void;
   canUndo?: () => boolean;
@@ -17,6 +18,7 @@ interface PlaybackControlsProps {
 
 export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   bpm = 120,
+  instrument,
   undo,
   redo,
   canUndo,
@@ -25,7 +27,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   const isTabletUp = useMediaQuery('(min-width: 640px)');
   const notes = useProjectStore((state) => state.notes);
   const { play, stop, toggleMetronome, isPlaying, isMetronomeEnabled, currentBpm, setCurrentBpm } =
-    usePlayback({ bpm, volume: -12 });
+    usePlayback({ bpm, volume: -12, instrument });
 
   const [bpmInputValue, setBpmInputValue] = useState(String(currentBpm));
   const [bpmSheetOpen, setBpmSheetOpen] = useState(false);
