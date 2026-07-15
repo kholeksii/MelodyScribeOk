@@ -29,6 +29,7 @@ export function useAudioUpload(onUploadComplete: (info: AudioInfo) => void) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setAudioBlob = useProjectStore((state) => state.setAudioBlob);
+  const setAudioFileInfo = useProjectStore((state) => state.setAudioFileInfo);
   const t = useT();
 
   const handleFile = useCallback(
@@ -42,6 +43,7 @@ export function useAudioUpload(onUploadComplete: (info: AudioInfo) => void) {
       try {
         const audioInfo = await apiClient.uploadAudio(file);
         setAudioBlob(file);
+        setAudioFileInfo(file.name, audioInfo.durationSec);
         onUploadComplete(audioInfo);
         return audioInfo;
       } catch (err) {
@@ -51,7 +53,7 @@ export function useAudioUpload(onUploadComplete: (info: AudioInfo) => void) {
         setIsUploading(false);
       }
     },
-    [onUploadComplete, setAudioBlob, t],
+    [onUploadComplete, setAudioBlob, setAudioFileInfo, t],
   );
 
   return { handleFile, isUploading, error, setError };

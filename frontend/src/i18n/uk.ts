@@ -27,6 +27,8 @@ export const uk = {
   record: 'Записати',
   recordingStop: '{s} с — натисніть, щоб зупинити',
   processing: 'Обробка…',
+  microphoneRecording: 'Запис із мікрофона',
+  clearSelectedFile: 'Прибрати обраний файл',
 
   // Інструменти
   instrument: 'Інструмент',

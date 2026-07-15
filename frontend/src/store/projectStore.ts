@@ -9,6 +9,8 @@ interface ProjectState {
   future: NoteData[][];
   metadata: ProjectMetadata | null;
   audioFileId: string | null;
+  audioFileName: string | null;
+  audioFileDurationSec: number | null;
   audioBlob: Blob | null;
   selectedNoteId: string | null;
   playingNoteId: string | null;
@@ -32,6 +34,8 @@ interface ProjectState {
   setPlayingNoteId: (id: string | null) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setAudioFileId: (id: string | null) => void;
+  setAudioFileInfo: (name: string | null, durationSec: number | null) => void;
+  clearAudioFile: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   shiftAllOctaves: (direction: 1 | -1) => void;
@@ -54,6 +58,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   future: [],
   metadata: null,
   audioFileId: null,
+  audioFileName: null,
+  audioFileDurationSec: null,
   audioBlob: null,
   selectedNoteId: null,
   playingNoteId: null,
@@ -138,6 +144,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     metadata: project.metadata,
     audioBlob,
     audioFileId: null,
+    audioFileName: null,
+    audioFileDurationSec: null,
     past: [],
     future: [],
     selectedNoteId: null,
@@ -150,6 +158,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setPlayingNoteId: (playingNoteId) => set({ playingNoteId }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setAudioFileId: (audioFileId) => set({ audioFileId }),
+  setAudioFileInfo: (audioFileName, audioFileDurationSec) => set({ audioFileName, audioFileDurationSec }),
+  clearAudioFile: () => set({
+    audioFileId: null,
+    audioFileName: null,
+    audioFileDurationSec: null,
+    audioBlob: null,
+  }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   setCorrections: (corrections) => set({ corrections }),
@@ -162,6 +177,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     future: [],
     metadata: null,
     audioFileId: null,
+    audioFileName: null,
+    audioFileDurationSec: null,
     audioBlob: null,
     selectedNoteId: null,
     playingNoteId: null,

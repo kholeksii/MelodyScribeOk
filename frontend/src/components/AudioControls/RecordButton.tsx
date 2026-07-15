@@ -15,6 +15,7 @@ interface RecordButtonProps {
 export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete, size = 'default' }) => {
   const { state, elapsedSec, error, start, stop } = useAudioRecorder();
   const setAudioBlob = useProjectStore((s) => s.setAudioBlob);
+  const setAudioFileInfo = useProjectStore((s) => s.setAudioFileInfo);
   const { showToast } = useToast();
   const t = useT();
 
@@ -27,6 +28,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({ onUploadComplete, si
         setAudioBlob(blob);
         const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
         const audioInfo = await apiClient.uploadAudio(file);
+        setAudioFileInfo(t('microphoneRecording'), audioInfo.durationSec);
         onUploadComplete(audioInfo);
       } catch (err) {
         showToast(localizeError(err, t) || t('uploadFailed'), 'error');
