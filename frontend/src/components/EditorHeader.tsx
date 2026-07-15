@@ -12,6 +12,7 @@ import { ThemeSegmented } from './ThemeSegmented';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { VersionBadge } from './VersionBadge';
+import { fullVersion } from '../version';
 import { useT, instrumentLabel } from '../i18n';
 
 interface EditorHeaderProps {
@@ -113,7 +114,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
     return (
       <header className="sticky top-0 z-30 border-b border-ink-soft/15 bg-paper-dark/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 lg:px-8">
-          <h1 className="shrink-0 text-xl font-bold text-ink">MelodyScribe</h1>
+          <div className="flex shrink-0 items-baseline gap-2">
+            <h1 className="text-xl font-bold text-ink">MelodyScribe</h1>
+            <VersionBadge />
+          </div>
           <input
             value={metadata?.title ?? ''}
             onChange={(e) => metadata && setMetadata({ ...metadata, title: e.target.value })}
@@ -409,8 +413,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onOpenShortcuts }) =
         <div className="px-3 pb-2">
           <LanguageSwitcher />
         </div>
-        <div className="border-t border-ink-soft/10 px-3 py-2">
-          <VersionBadge />
+        <div className="border-t border-ink-soft/10 px-3 py-2 text-xs text-ink-soft/70">
+          {t('version')}: {fullVersion}
         </div>
       </BottomSheet>
       {hiddenInputs}
